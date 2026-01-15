@@ -1,0 +1,5 @@
+{
+  "name": "CuadernoProfesorado v1.0",
+  "description": "Una aplicación para que los profesores gestionen las notas de los alumnos competencialmente, vinculen las tareas a los elementos curriculares de la LOMLOE y ponderen las calificaciones para calcular las notas finales, además de planificar el curso completo.",
+  "requestFramePermissions": []
+}
