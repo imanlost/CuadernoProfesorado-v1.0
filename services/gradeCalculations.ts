@@ -87,79 +87,92 @@ export const calculateCriterionScoresFromTool = (
     return finalScores;
 };
 
+// Helper to calculate a single assignment score based on its grade data and configuration
+export const calculateSingleAssignmentScore = (assignment: Assignment, grade: Grade | undefined): number | null => {
+    if (!grade || !grade.criterionScores) return null;
+
+    // 1. Recovery Override (Direct)
+    // If this is a recovery task itself and has a specific recovery grade
+    if (grade.criterionScores['recovery_grade'] != null) {
+        return grade.criterionScores['recovery_grade'];
+    }
+
+    // 2. Global Tool Mode (Linked Criteria present + Tool used)
+    if (assignment.evaluationMethod !== 'direct_grade' && assignment.evaluationToolId && assignment.linkedCriteria && assignment.linkedCriteria.length > 0) {
+         // Just take the first one, as they are all uniform in this mode
+         const firstLinked = assignment.linkedCriteria[0].criterionId;
+         return grade.criterionScores[firstLinked] ?? null;
+    }
+
+    // 3. Internal Tool Mode (No linked criteria, score derived from tool items)
+    if (assignment.evaluationMethod !== 'direct_grade' && assignment.evaluationToolId) {
+        const criterionScores = Object.values(grade.criterionScores).filter((s): s is number => s !== null);
+        if (criterionScores.length === 0) return null;
+        return criterionScores.reduce((a, b) => a + b, 0) / criterionScores.length;
+    }
+
+    // 4. Direct Grade (Weighted average of criteria)
+    let totalRatio = 0;
+    let weightedSum = 0;
+    let hasValidScore = false;
+
+    assignment.linkedCriteria.forEach(lc => {
+        const score = grade.criterionScores[lc.criterionId];
+        if (score != null) {
+            weightedSum += score * lc.ratio;
+            totalRatio += lc.ratio;
+            hasValidScore = true;
+        }
+    });
+    
+    if (!hasValidScore || totalRatio === 0) return null;
+    return weightedSum / totalRatio;
+};
 
 export const calculateAssignmentScoresForStudent = (studentId: string, assignments: Assignment[], grades: Grade[]): Map<string, number | null> => {
     const scores = new Map<string, number | null>();
     const gradesMap = new Map<string, Grade>();
+    
     grades.filter(g => g.studentId === studentId).forEach(grade => {
       gradesMap.set(grade.assignmentId, grade);
     });
 
     for (const assignment of assignments) {
         const grade = gradesMap.get(assignment.id);
-        if (!grade || !grade.criterionScores) {
-            scores.set(assignment.id, null);
-            continue;
-        }
-
-        // For a recovery assignment, its own score is the single grade that was entered.
-        // This is primarily for display in the GradebookTable cell.
-        if (grade.criterionScores['recovery_grade'] !== undefined && grade.criterionScores['recovery_grade'] !== null) {
-            scores.set(assignment.id, grade.criterionScores['recovery_grade']);
-            continue;
-        }
-
-        // If the assignment uses a tool BUT has explicitly linked criteria (Global Tool Mode),
-        // the score is essentially the average of those criteria (which are all the same value = global score).
-        // Or simpler: just take one of them.
-        if (assignment.evaluationMethod !== 'direct_grade' && assignment.evaluationToolId && assignment.linkedCriteria && assignment.linkedCriteria.length > 0) {
-             const firstLinked = assignment.linkedCriteria[0].criterionId;
-             scores.set(assignment.id, grade.criterionScores[firstLinked] ?? null);
-             continue;
-        }
-
-        if (assignment.evaluationMethod !== 'direct_grade' && assignment.evaluationToolId) {
-            // For tool-based assignments (Internal Mode), the final score is the average of its calculated criterion scores.
-            const criterionScores = Object.values(grade.criterionScores).filter((s): s is number => s !== null);
-            if (criterionScores.length === 0) {
-                scores.set(assignment.id, null);
-            } else {
-                const avg = criterionScores.reduce((a, b) => a + b, 0) / criterionScores.length;
-                scores.set(assignment.id, avg);
-            }
-        } else {
-            // Original logic for direct_grade (weighted average of criteria)
-            let totalRatio = 0;
-            let weightedSum = 0;
-            assignment.linkedCriteria.forEach(lc => {
-                const score = grade.criterionScores[lc.criterionId];
-                if (score !== null && score !== undefined) {
-                    weightedSum += score * lc.ratio;
-                    totalRatio += lc.ratio;
-                }
-            });
-            const finalScore = totalRatio === 0 ? null : weightedSum / totalRatio;
-            scores.set(assignment.id, finalScore);
-        }
+        const score = calculateSingleAssignmentScore(assignment, grade);
+        scores.set(assignment.id, score);
     }
     return scores;
 };
 
 export const calculateEvaluationPeriodGradeForStudent = (studentId: string, classData: ClassData, evaluationPeriodId: string): { grade: number | null; styleClasses: string } => {
-    const { assignments, categories } = classData;
+    const { assignments, categories, grades } = classData;
     
-    // Get the final, post-recovery grades for all criteria in the period
-    const courseCriteria = classData.assignments
-        .flatMap(a => {
-             const grade = classData.grades.find(g => g.assignmentId === a.id && g.studentId === studentId);
-             if (a.linkedCriteria.length > 0) return a.linkedCriteria.map(lc => lc.criterionId);
-             if (grade?.criterionScores) return Object.keys(grade.criterionScores);
-             return [];
-        })
-        .map(id => ({ id } as EvaluationCriterion)); 
-        
-    const finalCriterionGrades = calculateStudentCriterionGrades(studentId, classData, courseCriteria, evaluationPeriodId);
+    // 1. Identify Recovery Assignments in this period
+    const recoveryAssignments = assignments.filter(a => {
+        const cat = categories.find(c => c.id === a.categoryId);
+        return cat?.type === 'recovery' && a.evaluationPeriodId === evaluationPeriodId;
+    });
 
+    // 2. Build a map of Recovered Assignment IDs -> Recovery Grade
+    const recoveryMap = new Map<string, number>();
+    recoveryAssignments.forEach(recAssignment => {
+        const grade = grades.find(g => g.studentId === studentId && g.assignmentId === recAssignment.id);
+        const score = calculateSingleAssignmentScore(recAssignment, grade);
+        
+        if (score !== null) {
+            // Check which assignments are recovered by this one
+            (recAssignment.recoversAssignmentIds || []).forEach(recoveredId => {
+                // We assume the recovery grade replaces the original grade
+                // Use the highest grade? Or strictly the recovery grade? 
+                // Usually recovery replaces if higher, or just replaces. Let's assume replace if higher for safety, or just replace.
+                // Strict replacement is safer for "Recuperación".
+                recoveryMap.set(recoveredId, score);
+            });
+        }
+    });
+
+    // 3. Process Normal Categories
     const categoriesForPeriod = categories.filter(c => c.evaluationPeriodId === evaluationPeriodId && c.type !== 'recovery');
     
     let totalCategoryWeight = 0;
@@ -168,31 +181,37 @@ export const calculateEvaluationPeriodGradeForStudent = (studentId: string, clas
     categoriesForPeriod.forEach(category => {
         const assignmentsInCategory = assignments.filter(a => a.categoryId === category.id);
         
-        const criteriaInThisCategory = new Set<string>();
-        assignmentsInCategory.forEach(a => {
-            const grade = classData.grades.find(g => g.assignmentId === a.id && g.studentId === studentId);
-            if (a.linkedCriteria.length > 0) {
-                a.linkedCriteria.forEach(lc => criteriaInThisCategory.add(lc.criterionId));
-            } else if (grade?.criterionScores) {
-                Object.keys(grade.criterionScores).forEach(cid => criteriaInThisCategory.add(cid));
+        if (assignmentsInCategory.length === 0) return;
+
+        const scoresForCategory: number[] = [];
+
+        assignmentsInCategory.forEach(assignment => {
+            // Check if this assignment has been recovered
+            if (recoveryMap.has(assignment.id)) {
+                scoresForCategory.push(recoveryMap.get(assignment.id)!);
+            } else {
+                // Calculate original score
+                const grade = grades.find(g => g.studentId === studentId && g.assignmentId === assignment.id);
+                const score = calculateSingleAssignmentScore(assignment, grade);
+                if (score !== null) {
+                    scoresForCategory.push(score);
+                }
             }
         });
 
-        if (criteriaInThisCategory.size === 0) return;
-
-        const gradesForCategoryCriteria = Array.from(criteriaInThisCategory)
-            .map(critId => finalCriterionGrades.get(critId))
-            .filter((g): g is number => g !== null && g !== undefined);
-        
-        if (gradesForCategoryCriteria.length > 0) {
-            const categoryAverage = gradesForCategoryCriteria.reduce((sum, g) => sum + g, 0) / gradesForCategoryCriteria.length;
-            totalCategoryWeight += category.weight;
+        if (scoresForCategory.length > 0) {
+            // Average of tasks within the category
+            const categoryAverage = scoresForCategory.reduce((sum, g) => sum + g, 0) / scoresForCategory.length;
+            
             weightedCategorySum += categoryAverage * category.weight;
+            totalCategoryWeight += category.weight;
         }
     });
 
     if (totalCategoryWeight === 0) return { grade: null, styleClasses: 'bg-transparent text-slate-500' };
 
+    // Normalize result if weights don't add up to 100 (e.g. if one category is empty)
+    // weightedCategorySum / totalCategoryWeight gives the weighted average relative to the existing categories
     const finalGrade = weightedCategorySum / totalCategoryWeight;
     
     let styleClasses = 'bg-transparent text-slate-500';
