@@ -14,48 +14,90 @@ Este proyecto es una **aplicación local** diseñada para que el docente tenga e
 
 ## 📱 Vista previa de la aplicación
 
-| Alumnos | Cursos | Calendario |
-|---------|--------|------------|
-| ![Ajustes Alumnos](screenshot/ajustes-alum.png) | ![Ajustes Cursos](screenshot/ajustes-cursos.png) | ![Calendario](screenshot/calendario.png) |
+### 📅 **Calendario**
+![Mes](screenshot/calendario-mes.png) ![Semana](screenshot/calendario-sem.png) ![Día](screenshot/calendario-dia.png)
 
-| CSV Importar | CSV Saber | Plantilla |
-|--------------|-----------|-----------|
-| ![CSV Importar](screenshot/ajustes-csv-import.png) | ![CSV Saber](screenshot/ajustes-csv-saber.png) | ![Plantilla](screenshot/ajustes-plantilla.png) |
+### 📓 **Cuaderno**
+![Calificaciones](screenshot/cuaderno-calif.png) ![Criterios Evaluación](screenshot/cuader-inf-crit.png) ![Competencias Clave](screenshot/cuaderno-inf-compclave.png)
 
-**→ Ver [todas las capturas](screenshot/) (15 imágenes)**
+### 📄 **Diario de clase**
+![Diario](screenshot/diario-clase.png)
 
----
+### ⚙️ **Ajustes**
+![Configuración Curso](screenshot/ajustes-confcurso.png) ![Cursos Materias](screenshot/ajustes-curso-materia.png) ![Clases Alumnado](screenshot/ajustes-clases-alumn.png) ![Horario Semanal](screenshot/ajustes-horario.png) ![Currículo: CEs](screenshot/ajustes-curric-CEs.png) ![Currículo: Criterios](screenshot/ajustes-curric-CritEV.png) ![Currículo: Saberes](screenshot/ajustes-curric-saberes.png) ![Currículo: Importar CSV con el currículo](screenshot/ajustes-curric-importar.png) ![Planificación UD](screenshot/ajustes-planifUD.png)![Planificación UD](screenshot/ajustes-planifUD2.png) ![Instrumentos Evaluación](screenshot/ajustes-instrumentos.png) ![Copia Seguridad](screenshot/ajustes-backup.png)
+
+**→ [Ver todas las capturas (20+ imágenes)](screenshot/)**
 
 # 🚀 Instalación Paso a Paso
 
 ## 📥 1. Descarga del proyecto (TODOS los sistemas)
 
 1. Pulse **"Code"** (verde) → **"Download ZIP"**
-2. Descomprima y **recuerde la carpeta**
+2. Ubíque el zip en la carpeta conde vaya a utilizarlo en adelante.
+3. Descomprima y **recuerde la carpeta**
 
 ## 🖥️ **WINDOWS** | 🍎 **macOS** | 🐧 **LINUX**
 
 ### **Instalar Node.js:**
-- **Windows/macOS**: [nodejs.org](https://nodejs.org) → **LTS**
+- **Windows/macOS**:
+1. Vaya a [nodejs.org](https://nodejs.org/) y descargue la versión que dice **LTS** (es la más estable).
+2. Ejecute el archivo descargado y pulse Siguiente en todas las ventanas hasta finalizar.
+
 - **Linux**: `sudo apt update && sudo apt install nodejs npm`
 
 ### **Abrir terminal en carpeta:**
 ```
-Windows: Carpeta → barra direcciones → "cmd"
-macOS: Clic derecho carpeta → "Nuevo terminal en carpeta"  
-Linux: Clic derecho → "Abrir terminal"
+Windows: Para que la aplicación funcione, la consola debe "estar" dentro de la carpeta del cuaderno:
+
+1. Abra la carpeta donde descomprimió el proyecto.
+2. En la parte superior de la ventana (en la barra de direcciones donde aparece la ruta de la carpeta), haga clic en un espacio vacío, escriba la palabra `cmd` y pulse **Intro**.
+3. Se abrirá una ventana negra. Si ve que la ruta que aparece escrita coincide con la ubicación de su carpeta, lo ha hecho correctamente.
+macOS: 
+1. Busque su carpeta del cuaderno en el **Finder**.
+2. Haga clic derecho sobre la carpeta del cuaderno.
+3. Seleccione **Nuevo terminal en la carpeta** (o "Servicios" > "Nuevo terminal en la carpeta").
+4. Se abrirá una ventana blanca o negra. Verá el nombre de su carpeta justo antes del cursor.
+
+Linux:
+1. Localice la carpeta descomprimida.
+2. Haga clic derecho en un espacio vacío dentro de esa carpeta y seleccione **Abrir en una terminal**.
+
 ```
 
-### **Ejecutar:**
+### **Instalación y arranque:**
 ```
-npm install
-npm run dev
+Windows:
+1. En esa ventana negra, escriba el siguiente comando y pulse Intro:
+`npm install`
+2. Espere a que terminen de aparecer líneas de texto. Una vez que se detenga, escriba:
+`npm run dev`
+
+macOS:
+1. En el terminal, escriba este comando y pulse Intro:
+`npm install`
+2. Cuando finalice el proceso, escriba el comando de arranque:
+`npm run dev`
+
+Linux:
+1. En el terminal, escriba este comando y pulse Intro:
+`npm install`
+2. Cuando finalice el proceso, escriba el comando de arranque:
+`npm run dev`
 ```
 
-## 🌐 Acceder: `http://localhost:3000`
+## 🌐 Acceder: 
 
-**No cierres la consola** → Abre navegador → Dirección mostrada → ¡Listo! 🎉
+Una vez que haya ejecutado el comando `npm run dev`, fíjese en los mensajes que aparecen en la consola. Verá una línea similar a esta:
 
+`> Local: http://localhost:3000/`
+
+El número (3000, 3001, etc.) es el **puerto**. Aunque normalmente es el 3000, si ese está ocupado, el sistema abrirá otro automáticamente.
+
+1. No cierre la ventana de la consola (si la cierra, la aplicación dejará de funcionar).
+2. Abra su navegador (Chrome, Firefox, etc.).
+3. En la barra de direcciones superior, escriba la dirección que le indicó la consola (normalmente `http://localhost:3000/`) y pulse Intro.
+
+**¡Ya puede empezar a usar su Cuaderno del Profesorado!**
 ---
 
 ## 📖 [Manual de Usuario →](MANUAL_USUARIO.md)
