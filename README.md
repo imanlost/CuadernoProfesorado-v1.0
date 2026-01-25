@@ -1,3 +1,4 @@
+
 # Cuaderno del Profesorado
 
 **¡Bienvenido a su cuaderno digital personal!**
@@ -13,13 +14,15 @@ Este proyecto es una **aplicación local** diseñada para que el docente tenga e
 
 ## 📱 Vista previa de la aplicación
 
-| Pantalla Principal | Ajustes Alumnos | Ajustes Curso |
-|---|---|---|
-| ![Pantalla principal](screenshots/pantalla-principal.png) | ![Ajustes alumnos](screenshots/ajustes-alum.png) | ![Ajustes curso](screenshots/ajustes-curso.png) |
+| Alumnos | Cursos | Calendario |
+|---------|--------|------------|
+| ![Ajustes Alumnos](screenshot/ajustes-alum.png) | ![Ajustes Cursos](screenshot/ajustes-cursos.png) | ![Calendario](screenshot/calendario.png) |
 
-| Calendario | Informes | Configuración |
-|---|---|---|
-| ![Calendario](screenshots/calendario.png) | ![Informes](screenshots/informes.png) | ![Configuración](screenshots/configuracion.png) |
+| CSV Importar | CSV Saber | Plantilla |
+|--------------|-----------|-----------|
+| ![CSV Importar](screenshot/ajustes-csv-import.png) | ![CSV Saber](screenshot/ajustes-csv-saber.png) | ![Plantilla](screenshot/ajustes-plantilla.png) |
+
+**→ Ver [todas las capturas](screenshot/) (15 imágenes)**
 
 ---
 
@@ -27,122 +30,36 @@ Este proyecto es una **aplicación local** diseñada para que el docente tenga e
 
 ## 📥 1. Descarga del proyecto (TODOS los sistemas)
 
-**Antes de ir a las instrucciones específicas, todos los usuarios deben realizar este paso:**
+1. Pulse **"Code"** (verde) → **"Download ZIP"**
+2. Descomprima y **recuerde la carpeta**
 
-1. Pulse el botón verde **"Code"** en la parte superior derecha de esta página
-2. Seleccione **"Download ZIP"**
-3. Guarde el archivo en su ordenador y descomprímalo
-4. Se creará una carpeta llamada **"Cuaderno-Profesorado"** (o similar). **Es fundamental que recuerde dónde ha guardado esta carpeta**
+## 🖥️ **WINDOWS** | 🍎 **macOS** | 🐧 **LINUX**
 
----
+### **Instalar Node.js:**
+- **Windows/macOS**: [nodejs.org](https://nodejs.org) → **LTS**
+- **Linux**: `sudo apt update && sudo apt install nodejs npm`
 
-## 🖥️ 2. Instrucciones según su Sistema Operativo
-
-**Elija su sistema operativo y siga los pasos enumerados:**
-
-### 🔵 **WINDOWS**
-
-#### **Paso A: Instalar el motor Node.js**
-1. Vaya a [nodejs.org](https://nodejs.org) y descargue la versión que dice **LTS** (es la más estable)
-2. Ejecute el archivo descargado y pulse **Siguiente** en todas las ventanas hasta finalizar
-
-#### **Paso B: Abrir la consola en la carpeta correcta**
-**Para que la aplicación funcione, la consola debe "estar" dentro de la carpeta del cuaderno:**
-
-1. Abra la carpeta donde descomprimió el proyecto
-2. En la parte superior de la ventana, en la **barra de direcciones** donde aparece la ruta de la carpeta, haga clic en un **espacio vacío**
-3. Escriba la palabra **`cmd`** y pulse **Intro**
-4. Se abrirá una **ventana negra**. Si ve que la ruta que aparece escrita coincide con la ubicación de su carpeta, **lo ha hecho correctamente**
-
-#### **Paso C: Instalación y arranque**
-1. En esa ventana negra, escriba el siguiente comando y pulse **Intro**:
-   ```
-   npm install
-   ```
-2. Espere a que terminen de aparecer líneas de texto. Una vez que se detenga, escriba:
-   ```
-   npm run dev
-   ```
-
----
-
-### 🍎 **macOS**
-
-#### **Paso A: Instalar el motor Node.js**
-1. Vaya a [nodejs.org](https://nodejs.org) y descargue el instalador **LTS** (archivo `.pkg`)
-2. Ábralo y siga los pasos de instalación habituales de Mac
-
-#### **Paso B: Abrir la consola en la carpeta correcta**
-1. Busque su carpeta del cuaderno en el **Finder**
-2. Haga **clic derecho** sobre la carpeta del cuaderno
-3. Seleccione **"Nuevo terminal en la carpeta"** o **"Servicios" → "Nuevo terminal en la carpeta"**
-4. Se abrirá una ventana blanca o negra. Verá el nombre de su carpeta justo antes del cursor
-
-#### **Paso C: Instalación y arranque**
-1. En el terminal, escriba este comando y pulse **Intro**:
-   ```
-   npm install
-   ```
-2. Cuando finalice el proceso, escriba el comando de arranque:
-   ```
-   npm run dev
-   ```
-
----
-
-### 🐧 **LINUX**
-
-#### **Paso A: Instalar el motor Node.js**
-Abra su terminal y escriba los siguientes comandos:
+### **Abrir terminal en carpeta:**
 ```
-sudo apt update
-sudo apt install nodejs npm
+Windows: Carpeta → barra direcciones → "cmd"
+macOS: Clic derecho carpeta → "Nuevo terminal en carpeta"  
+Linux: Clic derecho → "Abrir terminal"
 ```
 
-#### **Paso B: Navegar a la carpeta**
-1. Localice la carpeta descomprimida
-2. Haga **clic derecho** en un espacio vacío dentro de esa carpeta y seleccione **"Abrir en una terminal"**
-
-#### **Paso C: Instalación y arranque**
-1. Ejecute la instalación de dependencias:
-   ```
-   npm install
-   ```
-2. Inicie la aplicación:
-   ```
-   npm run dev
-   ```
-
----
-
-## 🌐 3. Acceso a la aplicación
-
-Una vez que haya ejecutado el comando `npm run dev`, fíjese en los mensajes que aparecen en la consola. Verá una línea similar a esta:
-
+### **Ejecutar:**
 ```
-> Local:   http://localhost:3000
+npm install
+npm run dev
 ```
 
-**El número 3000, 3001, etc. es el puerto.** Aunque normalmente es el 3000, si ese está ocupado, el sistema abrirá otro automáticamente.
+## 🌐 Acceder: `http://localhost:3000`
 
-### Para acceder:
-1. **No cierre la ventana de la consola** (si la cierra, la aplicación dejará de funcionar)
-2. Abra su navegador (**Chrome, Firefox, etc.**)
-3. En la barra de direcciones superior, escriba la dirección que le indicó la consola (**normalmente `http://localhost:3000`**) y pulse **Intro**
-
-**¡Ya puede empezar a usar su Cuaderno del Profesorado!** 🎉
+**No cierres la consola** → Abre navegador → Dirección mostrada → ¡Listo! 🎉
 
 ---
 
-## 🛑 Para detener la aplicación
-Simplemente **cierre la ventana de la consola** o pulse las teclas **Control + C** en su teclado dentro de la terminal.
+## 📖 [Manual de Usuario →](MANUAL_USUARIO.md)
 
----
-
-## 📖 Manual de Usuario Completo
-
-Para aprender a usar todas las funciones de la aplicación:  
-[📚 Ver Manual de Usuario](MANUAL_USUARIO.md)
 
 ## 🔒 Sobre la seguridad de los datos
 
