@@ -33,57 +33,82 @@ Este proyecto es una **aplicación local** diseñada para que el docente tenga e
 ## 📥 1. Descarga del proyecto (TODOS los sistemas)
 
 1. Pulse **"Code"** (verde) → **"Download ZIP"**
-2. Ubíque el zip en la carpeta conde vaya a utilizarlo en adelante.
+2. Ubíque el zip en la carpeta donde vaya a utilizarlo en adelante.
 3. Descomprima y **recuerde la carpeta**
 
-## 🖥️ **WINDOWS** | 🍎 **macOS** | 🐧 **LINUX**
+---
+
+## 🖥️ **WINDOWS**
 
 ### **Instalar Node.js:**
-- **Windows/macOS**:
 1. Vaya a [nodejs.org](https://nodejs.org/) y descargue la versión que dice **LTS** (es la más estable).
 2. Ejecute el archivo descargado y pulse Siguiente en todas las ventanas hasta finalizar.
 
-- **Linux**: `sudo apt update && sudo apt install nodejs npm`
-
 ### **Abrir terminal en carpeta:**
-```
-Windows: Para que la aplicación funcione, la consola debe "estar" dentro de la carpeta del cuaderno:
+Para que la aplicación funcione, la consola debe "estar" dentro de la carpeta del cuaderno:
 
 1. Abra la carpeta donde descomprimió el proyecto.
 2. En la parte superior de la ventana (en la barra de direcciones donde aparece la ruta de la carpeta), haga clic en un espacio vacío, escriba la palabra `cmd` y pulse **Intro**.
 3. Se abrirá una ventana negra. Si ve que la ruta que aparece escrita coincide con la ubicación de su carpeta, lo ha hecho correctamente.
-macOS: 
+
+### **Instalación y arranque:**
+1. En esa ventana negra, escriba el siguiente comando y pulse Intro:
+   ```
+   npm install
+   ```
+2. Espere a que terminen de aparecer líneas de texto. Una vez que se detenga, escriba:
+   ```
+   npm run dev
+   ```
+
+---
+
+## 🍎 **macOS**
+
+### **Instalar Node.js:**
+1. Vaya a [nodejs.org](https://nodejs.org/) y descargue la versión que dice **LTS** (es la más estable).
+2. Ejecute el archivo descargado y pulse Siguiente en todas las ventanas hasta finalizar.
+
+### **Abrir terminal en carpeta:**
 1. Busque su carpeta del cuaderno en el **Finder**.
 2. Haga clic derecho sobre la carpeta del cuaderno.
 3. Seleccione **Nuevo terminal en la carpeta** (o "Servicios" > "Nuevo terminal en la carpeta").
 4. Se abrirá una ventana blanca o negra. Verá el nombre de su carpeta justo antes del cursor.
 
-Linux:
+### **Instalación y arranque:**
+1. En el terminal, escriba este comando y pulse Intro:
+   ```
+   npm install
+   ```
+2. Cuando finalice el proceso, escriba el comando de arranque:
+   ```
+   npm run dev
+   ```
+
+---
+
+## 🐧 **LINUX**
+
+### **Instalar Node.js:**
+```
+sudo apt update && sudo apt install nodejs npm
+```
+
+### **Abrir terminal en carpeta:**
 1. Localice la carpeta descomprimida.
 2. Haga clic derecho en un espacio vacío dentro de esa carpeta y seleccione **Abrir en una terminal**.
 
-```
-
 ### **Instalación y arranque:**
-```
-Windows:
-1. En esa ventana negra, escriba el siguiente comando y pulse Intro:
-`npm install`
-2. Espere a que terminen de aparecer líneas de texto. Una vez que se detenga, escriba:
-`npm run dev`
-
-macOS:
 1. En el terminal, escriba este comando y pulse Intro:
-`npm install`
+   ```
+   npm install
+   ```
 2. Cuando finalice el proceso, escriba el comando de arranque:
-`npm run dev`
+   ```
+   npm run dev
+   ```
 
-Linux:
-1. En el terminal, escriba este comando y pulse Intro:
-`npm install`
-2. Cuando finalice el proceso, escriba el comando de arranque:
-`npm run dev`
-```
+---
 
 ## 🌐 Acceder: 
 
@@ -100,7 +125,7 @@ El número (3000, 3001, etc.) es el **puerto**. Aunque normalmente es el 3000, s
 **¡Ya puede empezar a usar su Cuaderno del Profesorado!**
 ---
 
-## 📖 [Manual de Usuario →](MANUAL_USUARIO.md)
+## 📖 [Manual de Usuario →](MANUAL_USUARIO.md) *en proceso*
 
 
 ## 🔒 Sobre la seguridad de los datos
