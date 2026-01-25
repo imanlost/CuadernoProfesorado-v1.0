@@ -163,11 +163,13 @@ export const calculateEvaluationPeriodGradeForStudent = (studentId: string, clas
         if (score !== null) {
             // Check which assignments are recovered by this one
             (recAssignment.recoversAssignmentIds || []).forEach(recoveredId => {
-                // We assume the recovery grade replaces the original grade
-                // Use the highest grade? Or strictly the recovery grade? 
-                // Usually recovery replaces if higher, or just replaces. Let's assume replace if higher for safety, or just replace.
-                // Strict replacement is safer for "Recuperación".
-                recoveryMap.set(recoveredId, score);
+                // Store the recovery score for this assignment ID
+                // Note: If multiple recoveries affect the same assignment, this logic takes the last processed one.
+                // Assuming typical flow, this is acceptable, or we could take the max of recoveries.
+                const currentRec = recoveryMap.get(recoveredId);
+                if (currentRec === undefined || score > currentRec) {
+                    recoveryMap.set(recoveredId, score);
+                }
             });
         }
     });
@@ -186,16 +188,24 @@ export const calculateEvaluationPeriodGradeForStudent = (studentId: string, clas
         const scoresForCategory: number[] = [];
 
         assignmentsInCategory.forEach(assignment => {
+            // Calculate original score first
+            const grade = grades.find(g => g.studentId === studentId && g.assignmentId === assignment.id);
+            let score = calculateSingleAssignmentScore(assignment, grade);
+
             // Check if this assignment has been recovered
             if (recoveryMap.has(assignment.id)) {
-                scoresForCategory.push(recoveryMap.get(assignment.id)!);
-            } else {
-                // Calculate original score
-                const grade = grades.find(g => g.studentId === studentId && g.assignmentId === assignment.id);
-                const score = calculateSingleAssignmentScore(assignment, grade);
+                const recoveryScore = recoveryMap.get(assignment.id)!;
+                // If original score exists, take the maximum of (Original, Recovery)
                 if (score !== null) {
-                    scoresForCategory.push(score);
+                    score = Math.max(score, recoveryScore);
+                } else {
+                    // If original didn't exist (e.g., missed exam), take recovery score
+                    score = recoveryScore;
                 }
+            }
+
+            if (score !== null) {
+                scoresForCategory.push(score);
             }
         });
 
