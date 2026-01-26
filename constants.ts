@@ -2,8 +2,8 @@
 import type { KeyCompetence, EvaluationCriterion, SpecificCompetence, ClassData, JournalEntry, Course, OperationalDescriptor, ProgrammingUnit, BasicKnowledge, AcademicConfiguration, EvaluationTool } from './types';
 
 // Constants for ACNEAE tags and their priority order
-export const ACNEAE_TAGS = ['RE ACA', 'RE EC', 'RE', 'PRE ES1', 'PRE ES2', 'PRE ES3', 'PRE ES4', 'PAC', 'PAC EP1', 'PAC EP2', 'PAC EP3', 'PAC EP4', 'PAC EP5', 'PAC EP6', 'ACS', 'FPEX', 'NN'];
-export const ACNEAE_ORDER = { 'PAC': 1, 'PRE': 1, 'RE ACA': 2, 'RE EC': 2, 'RE': 3 };
+export const ACNEAE_TAGS = ['RE ACA', 'RE EC', 'RE', 'PRE ES1', 'PRE ES2', 'PRE ES3', 'PRE ES4', 'PAC', 'PAC EP1', 'PAC EP2', 'PAC EP3', 'PAC EP4', 'PAC EP5', 'PAC EP6', 'ACS', 'FPEX', 'NN', 'ABS'];
+export const ACNEAE_ORDER = { 'PAC': 1, 'PRE': 1, 'ABS': 1, 'RE ACA': 2, 'RE EC': 2, 'RE': 3, 'ACS': 1 };
 
 // DESCRIPTORES OPERATIVOS LOMLOE - ETAPA ESO
 // This section is intentionally left empty. Curriculum should be imported by the user.
