@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ACNEAE_ORDER } from '../constants';
 
@@ -35,6 +36,8 @@ const getTagStyle = (tag: string | null): { bg: string, text: string } => {
              return { bg: 'bg-blue-500', text: 'text-white' };
         case 'ACS':
             return { bg: 'bg-green-500', text: 'text-white' };
+        case 'ABS':
+            return { bg: 'bg-slate-700', text: 'text-white' };
         default:
             return { bg: 'bg-yellow-500', text: 'text-white' };
     }
