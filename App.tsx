@@ -390,7 +390,35 @@ const App = () => {
         }
 
         if (!activeClass && activeView !== 'calendar') {
-            return <div className="p-8 text-center text-slate-500">Por favor, selecciona una clase para empezar o crea una nueva en Ajustes.</div>;
+            return (
+                <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border overflow-hidden">
+                    {/* Render class selector tabs even in empty state if we are in Gradebook view and have classes */}
+                    {activeView === 'gradebook' && academicClasses.length > 0 && (
+                        <div className="flex overflow-x-auto no-scrollbar max-w-full px-2 pt-2 border-b bg-slate-50/50">
+                            {academicClasses.sort((a, b) => a.name.localeCompare(b.name)).map(cls => (
+                                <button
+                                    key={cls.id}
+                                    onClick={() => setActiveClassId(cls.id)}
+                                    className={`px-4 py-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300`}
+                                >
+                                    {cls.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <div className="p-12 text-center flex flex-col items-center justify-center flex-grow">
+                        <div className="bg-slate-50 p-4 rounded-full mb-4">
+                            <BookOpenIcon className="w-8 h-8 text-slate-400"/>
+                        </div>
+                        <p className="text-lg font-medium text-slate-700 mb-2">Ninguna clase seleccionada</p>
+                        <p className="text-sm text-slate-500 max-w-sm">
+                            {academicClasses.length > 0 
+                                ? "Selecciona una clase de la barra superior para ver sus calificaciones." 
+                                : "No tienes clases creadas. Ve a Ajustes para crear tu primera clase."}
+                        </p>
+                    </div>
+                </div>
+            );
         }
 
         const reportViews: View[] = ['criteria', 'competences', 'key-competences', 'descriptors'];
@@ -557,5 +585,7 @@ const App = () => {
         </div>
     );
 };
+
+export default App;
 
 export default App;
