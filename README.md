@@ -125,7 +125,7 @@ El número (3000, 3001, etc.) es el **puerto**. Aunque normalmente es el 3000, s
 **¡Ya puede empezar a usar su Cuaderno del Profesorado!**
 ---
 
-## 📖 [Manual de Usuario →](MANUAL_USUARIO.md) *en proceso*
+## 📖 [Manual de Usuario →](ManualUsuario.md) 
 
 
 ## 🔒 Sobre la seguridad de los datos
