@@ -149,4 +149,24 @@ El número (3000, 3001, etc.) es el **puerto**. Aunque normalmente es el 3000, s
 2. Abra su navegador (Chrome, Firefox, Edge, etc.).  
 3. En la barra de direcciones superior, escriba la dirección que le indicó la consola (normalmente `http://localhost:3000/`) y pulse Intro.  
 
+
+---
+
+## 🛑 Para detener la aplicación
+Simplemente **cierre la ventana de la consola** o pulse las teclas **Control + C** en su teclado dentro de la terminal.
+
+---
+
+## 📖 Manual de Usuario Completo
+
+Para aprender a usar todas las funciones de la aplicación:  
+[📚 Ver Manual de Usuario](MANUAL_USUARIO.md)
+
+## 🔒 Sobre la seguridad de los datos
+
+- ✅ **100% local** - Nada sale de su ordenador
+- ✅ **Sin cuentas ni registros** - No necesita registrarse
+- ✅ **Compatible con RGPD** - Cumple normativa de protección de datos
+- ✅ **Copia de seguridad sencilla** - Copie la carpeta completa
+
 **¡Ya puede empezar a usar su Cuaderno del Profesorado!**
