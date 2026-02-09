@@ -23,7 +23,7 @@ Este proyecto es una **aplicación local** diseñada para que el docente tenga e
 ![Diario](screenshots/diario-clase.png)
 
 ### ⚙️ **Ajustes**
-![Configuración Curso](screenshots/ajustes-confcurso.png) ![Cursos Materias](screenshots/ajustes-curso-materia.png) ![Clases Alumnado](screenshots/ajustes-clases-alumn.png) ![Horario Semanal](screenshots/ajustes-horario.png) ![Currículo](screenshots/ajustes-curric.png) ![Planificación UD](screenshots/ajustes-planifUD.png) ![Planificación UD](screenshots/ajustes-planifUD2.png) ![Instrumentos Evaluación](screenshots/ajustes-instrumentos.png) ![Copia Seguridad](screenshots/ajustes-backup.png)
+![Configuración Curso](screenshots/ajustes-confcurso1.png) ![Cursos Materias](screenshots/ajustes-curso-materia.png) ![Clases Alumnado](screenshots/ajustes-clases-alumn.png) ![Horario Semanal](screenshots/ajustes-horario.png) ![Currículo](screenshots/ajustes-curric.png) ![Planificación UD](screenshots/ajustes-planifUD.png) ![Planificación UD](screenshots/ajustes-planifUD2.png) ![Instrumentos Evaluación](screenshots/ajustes-instrumentos.png) ![Copia Seguridad](screenshots/ajustes-backup.png)
 
 **→ [Ver todas las capturas (20+ imágenes)](screenshots/)**
 
