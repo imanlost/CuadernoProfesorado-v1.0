@@ -1,5 +1,44 @@
 
-import type { ClassData, EvaluationCriterion, SpecificCompetence, KeyCompetence, Assignment, Grade, AcademicConfiguration, EvaluationTool, Rubric, RubricItem } from '../types';
+import type { ClassData, EvaluationCriterion, SpecificCompetence, KeyCompetence, Assignment, Grade, AcademicConfiguration, EvaluationTool, Rubric, RubricItem, GradeScaleRule } from '../types';
+
+// Helper to determine color based on configuration
+export const getGradeColorClass = (grade: number | null, scale?: GradeScaleRule[]): string => {
+    if (grade === null || grade === undefined) return 'bg-transparent text-slate-500';
+    
+    // Default fallback if no scale provided or empty (Expanded Gradation)
+    if (!scale || scale.length === 0) {
+        if (grade < 5) return 'bg-red-100 text-red-800';
+        if (grade < 6) return 'bg-orange-100 text-orange-800';
+        if (grade < 7) return 'bg-yellow-100 text-yellow-800';
+        if (grade < 9) return 'bg-lime-100 text-lime-800';
+        return 'bg-emerald-100 text-emerald-800';
+    }
+
+    // Sort scale descending by min value to find the first match from top down
+    // (e.g. >= 9, then >= 7, then >= 5...)
+    const sortedScale = [...scale].sort((a, b) => b.min - a.min);
+    
+    for (const rule of sortedScale) {
+        if (grade >= rule.min) {
+             switch(rule.color) {
+                 case 'red': return 'bg-red-100 text-red-800';
+                 case 'orange': return 'bg-orange-100 text-orange-800';
+                 case 'yellow': return 'bg-yellow-100 text-yellow-800';
+                 case 'lime': return 'bg-lime-100 text-lime-800';
+                 case 'green': return 'bg-green-100 text-green-800';
+                 case 'emerald': return 'bg-emerald-100 text-emerald-800';
+                 case 'teal': return 'bg-teal-100 text-teal-800';
+                 case 'blue': return 'bg-blue-100 text-blue-800';
+                 case 'indigo': return 'bg-indigo-100 text-indigo-800';
+                 case 'violet': return 'bg-violet-100 text-violet-800';
+                 case 'gray': return 'bg-slate-100 text-slate-800';
+                 default: return 'bg-slate-100 text-slate-500';
+             }
+        }
+    }
+    // Fallback if grade is lower than the lowest defined range (shouldn't happen if 0 is defined)
+    return 'bg-red-50 text-red-900'; 
+}
 
 export const calculateToolGlobalScore = (
     tool: EvaluationTool,
@@ -145,7 +184,7 @@ export const calculateAssignmentScoresForStudent = (studentId: string, assignmen
     return scores;
 };
 
-export const calculateEvaluationPeriodGradeForStudent = (studentId: string, classData: ClassData, evaluationPeriodId: string): { grade: number | null; styleClasses: string } => {
+export const calculateEvaluationPeriodGradeForStudent = (studentId: string, classData: ClassData, evaluationPeriodId: string, gradeScale?: GradeScaleRule[]): { grade: number | null; styleClasses: string } => {
     const { assignments, categories, grades } = classData;
     
     // 1. Identify Recovery Assignments in this period
@@ -218,47 +257,37 @@ export const calculateEvaluationPeriodGradeForStudent = (studentId: string, clas
         }
     });
 
-    if (totalCategoryWeight === 0) return { grade: null, styleClasses: 'bg-transparent text-slate-500' };
+    if (totalCategoryWeight === 0) return { grade: null, styleClasses: getGradeColorClass(null, gradeScale) };
 
     // Normalize result if weights don't add up to 100 (e.g. if one category is empty)
     // weightedCategorySum / totalCategoryWeight gives the weighted average relative to the existing categories
     const finalGrade = weightedCategorySum / totalCategoryWeight;
     
-    let styleClasses = 'bg-transparent text-slate-500';
-    if (finalGrade < 5) styleClasses = 'bg-red-200 text-red-900';
-    else if (finalGrade < 7) styleClasses = 'bg-yellow-200 text-yellow-900';
-    else styleClasses = 'bg-green-200 text-green-900';
-    
-    return { grade: finalGrade, styleClasses };
+    return { grade: finalGrade, styleClasses: getGradeColorClass(finalGrade, gradeScale) };
 };
 
 
 export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
-    const { evaluationPeriods, evaluationPeriodWeights = {} } = academicConfiguration;
+    const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale } = academicConfiguration;
     
     let totalWeightUsed = 0;
     let weightedSum = 0;
 
     evaluationPeriods.forEach(period => {
-        const periodGradeResult = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id);
+        const periodGradeResult = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id); // Internal call uses standard or no scale, doesn't matter for numbers
         const periodWeight = evaluationPeriodWeights[period.id];
 
-        if (periodGradeResult.grade !== null && periodWeight) {
+        if (periodGradeResult.grade !== null && periodWeight !== undefined && periodWeight !== null) {
             weightedSum += periodGradeResult.grade * periodWeight;
             totalWeightUsed += periodWeight;
         }
     });
 
-    if (totalWeightUsed === 0) return { grade: 'N/A', styleClasses: 'bg-transparent text-slate-500' };
+    if (totalWeightUsed === 0) return { grade: 'N/A', styleClasses: getGradeColorClass(null, gradeScale) };
 
     const finalGrade = weightedSum / totalWeightUsed;
     
-    let styleClasses = 'bg-transparent text-slate-500';
-    if (finalGrade < 5) styleClasses = 'bg-red-200 text-red-900';
-    else if (finalGrade < 7) styleClasses = 'bg-yellow-200 text-yellow-900';
-    else styleClasses = 'bg-green-200 text-green-900';
-
-    return { grade: finalGrade.toFixed(2), styleClasses };
+    return { grade: finalGrade.toFixed(2), styleClasses: getGradeColorClass(finalGrade, gradeScale) };
 };
 
 export const calculateStudentCriterionGrades = (

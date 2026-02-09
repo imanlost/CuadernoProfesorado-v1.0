@@ -6,7 +6,7 @@ import AssignmentModal from './AssignmentModal';
 import GradeEntryModal from './GradeEntryModal';
 import CategoryModal from './CategoryModal';
 import AcneaeTag from './AcneaeTag';
-import { calculateAssignmentScoresForStudent, calculateEvaluationPeriodGradeForStudent, calculateOverallFinalGradeForStudent, calculateCriterionScoresFromTool } from '../services/gradeCalculations';
+import { calculateAssignmentScoresForStudent, calculateEvaluationPeriodGradeForStudent, calculateOverallFinalGradeForStudent, calculateCriterionScoresFromTool, getGradeColorClass } from '../services/gradeCalculations';
 import BulkGradeImportModal from './BulkGradeImportModal';
 import StudentSummaryModal from './StudentSummaryModal';
 import CopyAssignmentModal from './CopyAssignmentModal';
@@ -28,17 +28,8 @@ interface GradebookTableProps {
   onCopyAssignment: (sourceAssignment: Assignment, targetClassId: string, targetPeriodId: string, targetCategoryId: string) => void;
 }
 
-const getGradeStyleClasses = (grade: number | null) => {
-    if (grade === null || grade === undefined) {
-        return { bg: 'bg-transparent', text: 'text-slate-500' };
-    }
-    if (grade < 5) {
-        return { bg: 'bg-red-100', text: 'text-red-800' };
-    }
-    if (grade < 7) {
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
-    }
-    return { bg: 'bg-green-100', text: 'text-green-800' };
+const getGradeStyleClasses = (grade: number | null, config?: AcademicConfiguration) => {
+    return getGradeColorClass(grade, config?.gradeScale);
 };
 
 const toYYYYMMDD = (date: Date): string => {
@@ -132,12 +123,12 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
     for (const student of classData.students) {
         const studentGrades = new Map<string, { grade: number | null; styleClasses: string }>();
         evaluationPeriods.forEach(period => {
-            studentGrades.set(period.id, calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id));
+            studentGrades.set(period.id, calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id, academicConfiguration.gradeScale));
         });
         periodGrades.set(student.id, studentGrades);
     }
     return periodGrades;
-  }, [classData, evaluationPeriods]);
+  }, [classData, evaluationPeriods, academicConfiguration.gradeScale]);
 
   const studentOverallFinalGrades = useMemo(() => {
       const finalGrades = new Map<string, { grade: string; styleClasses: string }>();
@@ -206,7 +197,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
     setIsGradeEntryModalOpen(true);
   };
 
-  const handleSaveGrade = (studentId: string, assignmentId: string, data: { criterionScores: Record<string, number | null> } | { toolResults: Record<string, boolean | string> }) => {
+  const handleSaveGrade = (studentId: string, assignmentId: string, data: { criterionScores: Record<string, number | null> } | { toolResults: Record<string, boolean | string> }, nextStudent: boolean = false) => {
     const assignment = classData.assignments.find(a => a.id === assignmentId);
     if (!assignment) return;
 
@@ -228,7 +219,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       (g) => g.studentId === studentId && g.assignmentId === assignmentId
     );
 
-    let updatedGrades: Grade[];
+    let updatedGrades = [...classData.grades];
     
     const hasScores = Object.values(finalCriterionScores).some(s => s !== null);
     // Fix: Allow saving if there are tool results, even if score is null (e.g. unlinked tool)
@@ -244,19 +235,31 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
     if (existingGradeIndex > -1) {
         if (!hasScores && !hasToolResults) {
              // If no scores and no tool results, remove the grade entry entirely
-             updatedGrades = classData.grades.filter((_, index) => index !== existingGradeIndex);
+             updatedGrades = updatedGrades.filter((_, index) => index !== existingGradeIndex);
         } else {
-            updatedGrades = classData.grades.map((g, i) =>
-              i === existingGradeIndex ? { ...g, ...newGradeData } : g
-            );
+            updatedGrades[existingGradeIndex] = { ...updatedGrades[existingGradeIndex], ...newGradeData };
         }
     } else if (hasScores || hasToolResults) {
-        updatedGrades = [...classData.grades, newGradeData];
-    } else {
-        return; // Nothing to save
+        updatedGrades.push(newGradeData);
     }
+
+    // Update parent state
     onUpdateClass({ ...classData, grades: updatedGrades });
-    setIsGradeEntryModalOpen(false);
+
+    if (nextStudent) {
+        // Logic to switch to next student
+        const currentStudentIndex = classData.students.findIndex(s => s.id === studentId);
+        if (currentStudentIndex !== -1 && currentStudentIndex < classData.students.length - 1) {
+            const nextStudent = classData.students[currentStudentIndex + 1];
+            // Find grade in the UPDATED grades array (locally calculated since onUpdateClass is async-like in propagation)
+            const nextGrade = updatedGrades.find(g => g.studentId === nextStudent.id && g.assignmentId === assignmentId) || null;
+            setGradeEntryData({ student: nextStudent, assignment, grade: nextGrade });
+        } else {
+            setIsGradeEntryModalOpen(false);
+        }
+    } else {
+        setIsGradeEntryModalOpen(false);
+    }
   };
 
   const handleBulkSaveGrades = (gradesToSave: Map<string, number>) => {
@@ -551,9 +554,9 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                       }
                       return assignmentsForCat.map((a, idx) => {
                         const score = studentAssignmentScores.get(student.id)?.get(a.id);
-                        const style = getGradeStyleClasses(score ?? null);
+                        const styleClasses = getGradeStyleClasses(score ?? null, academicConfiguration);
                         return (
-                          <td key={a.id} className={`p-2 text-center font-bold text-base cursor-pointer hover:bg-blue-50 border-l ${idx === assignmentsForCat.length - 1 ? 'border-r-2 border-r-slate-400' : 'border-r'} ${style.bg} ${style.text}`} onClick={() => handleOpenGradeEntry(student, a)}>
+                          <td key={a.id} className={`p-2 text-center font-bold text-base cursor-pointer hover:bg-blue-50 border-l ${idx === assignmentsForCat.length - 1 ? 'border-r-2 border-r-slate-400' : 'border-r'} ${styleClasses}`} onClick={() => handleOpenGradeEntry(student, a)}>
                             {score?.toFixed(2) ?? '-'}
                           </td>
                         )
@@ -616,7 +619,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
        )}
       {activeCategory && <AssignmentModal isOpen={isAssignmentModalOpen} onClose={() => setIsAssignmentModalOpen(false)} onSave={handleSaveAssignment} assignmentToEdit={assignmentToEdit} category={activeCategory} criteria={criteria} specificCompetences={specificCompetences} keyCompetences={keyCompetences} programmingUnits={programmingUnits} evaluationPeriods={evaluationPeriods} academicConfiguration={academicConfiguration} evaluationTools={evaluationTools} allAssignments={classData.assignments} allCategories={classData.categories} />}
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSave={handleSaveCategory} categoryToEdit={categoryToEdit} evaluationPeriodId={activePeriodId} />
-      {gradeEntryData && <GradeEntryModal isOpen={isGradeEntryModalOpen} onClose={() => setIsGradeEntryModalOpen(false)} student={gradeEntryData.student} assignment={gradeEntryData.assignment} grade={gradeEntryData.grade} criteriaList={criteria} onSave={handleSaveGrade} evaluationTools={evaluationTools} allAssignments={classData.assignments} />}
+      {gradeEntryData && <GradeEntryModal isOpen={isGradeEntryModalOpen} onClose={() => setIsGradeEntryModalOpen(false)} student={gradeEntryData.student} assignment={gradeEntryData.assignment} grade={gradeEntryData.grade} criteriaList={criteria} onSave={handleSaveGrade} evaluationTools={evaluationTools} allAssignments={classData.assignments} students={classData.students} />}
       {assignmentForImport && <BulkGradeImportModal isOpen={isBulkImportModalOpen} onClose={() => setIsBulkImportModalOpen(false)} onSave={handleBulkSaveGrades} assignment={assignmentForImport} students={classData.students} />}
       {selectedStudentForSummary && (
           <StudentSummaryModal

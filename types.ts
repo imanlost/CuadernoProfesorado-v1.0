@@ -179,6 +179,12 @@ export interface EvaluationPeriod {
   endDate: string; // YYYY-MM-DD
 }
 
+export interface GradeScaleRule {
+    min: number;
+    color: 'red' | 'orange' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'blue' | 'indigo' | 'violet' | 'gray';
+    label?: string;
+}
+
 export interface AcademicConfiguration {
   academicYearStart: string; // YYYY-MM-DD
   academicYearEnd: string; // YYYY-MM-DD
@@ -189,4 +195,5 @@ export interface AcademicConfiguration {
   periods?: string[];
   defaultStartView?: 'calendar' | 'gradebook' | 'journal';
   defaultCalendarView?: 'month' | 'week' | 'day';
+  gradeScale?: GradeScaleRule[];
 }

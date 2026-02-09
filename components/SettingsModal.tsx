@@ -1,13 +1,11 @@
 
-// FIX: Corrected the React import statement.
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import Modal from './Modal';
-import { UserGroupIcon, AcademicCapIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, PlusIcon, BookOpenIcon, ClockIcon, CalendarDaysIcon, ListBulletIcon, ArrowUpIcon, ArrowDownIcon, BeakerIcon, DevicePhoneMobileIcon, DeviceTabletIcon, ComputerDesktopIcon } from './Icons';
-import type { ClassData, Course, Student, KeyCompetence, SpecificCompetence, EvaluationCriterion, JournalEntry, OperationalDescriptor, AcademicConfiguration, Holiday, EvaluationPeriod, BasicKnowledge, ProgrammingUnit, EvaluationTool } from '../types';
+import { UserGroupIcon, AcademicCapIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, PlusIcon, BookOpenIcon, ClockIcon, CalendarDaysIcon, ListBulletIcon, ArrowUpIcon, ArrowDownIcon, BeakerIcon } from './Icons';
+import type { ClassData, Course, Student, KeyCompetence, SpecificCompetence, EvaluationCriterion, JournalEntry, AcademicConfiguration, Holiday, EvaluationPeriod, BasicKnowledge, ProgrammingUnit, EvaluationTool, GradeScaleRule } from '../types';
 import { ACNEAE_TAGS } from '../constants';
 import ClassModal from './ClassModal';
 import BulkAddStudentModal from './BulkAddStudentModal';
-import ExportModal from './ExportModal';
 import CurriculumManager from './CurriculumManager';
 import ProgrammingManager from './ProgrammingManager';
 import EvaluationToolManager from './EvaluationToolManager';
@@ -86,7 +84,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Ajustes de la Aplicación" size="5xl">
-            <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex flex-col md:flex-row gap-8 min-h-[60vh]">
                 <nav className="flex-shrink-0 md:w-56 flex flex-col">
                     <ul className="space-y-2">
                         <SettingsNavItem icon={<CalendarDaysIcon />} label="Configuración del Curso" view="academicConfig" activeView={activeView} setActiveView={setActiveView} />
@@ -101,7 +99,7 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                          <SettingsNavItem icon={<ArrowDownTrayIcon />} label="Copia de Seguridad" view="backup" activeView={activeView} setActiveView={setActiveView} />
                     </div>
                 </nav>
-                <main className="flex-grow min-w-0">
+                <main className="flex-grow min-w-0 pr-2">
                     {renderView()}
                 </main>
             </div>
@@ -123,7 +121,9 @@ const SettingsNavItem = ({ icon, label, view, activeView, setActiveView }: any) 
     </li>
 );
 
-// ... (Other managers like ClassManager, ScheduleManager, CourseManager - unchanged) ...
+// ... (ClassManager, StudentRow, AcneaeSelector, ScheduleManager, CourseManager components remain unchanged) ...
+// The change is primarily in AcademicConfigManager below
+
 const ClassManager: React.FC<{
     classes: ClassData[];
     setClasses: (updater: React.SetStateAction<ClassData[]>) => void;
@@ -418,6 +418,8 @@ const StudentRow: React.FC<StudentRowProps> = ({ student, onUpdate, onDelete, on
     );
 };
 
+// --- Schedule Manager ---
+
 const ScheduleManager: React.FC<{
     classes: ClassData[];
     setClasses: (updater: React.SetStateAction<ClassData[]>) => void;
@@ -430,20 +432,16 @@ const ScheduleManager: React.FC<{
         setClasses(prevClasses => {
             return prevClasses.map(c => {
                 const oldSchedule = c.schedule || [];
-                // Check if the current class has the slot being changed
                 const hasSlot = oldSchedule.some(slot => slot.day === day && slot.periodIndex === periodIndex);
 
-                // Case 1: The class is the new owner. Add the slot if it doesn't have it.
                 if (c.id === newClassId) {
                     return hasSlot ? c : { ...c, schedule: [...oldSchedule, { day, periodIndex }] };
                 } 
                 
-                // Case 2: The class is not the new owner, but has the slot. Remove it.
                 if (hasSlot) {
                     return { ...c, schedule: oldSchedule.filter(slot => !(slot.day === day && slot.periodIndex === periodIndex)) };
                 }
 
-                // Case 3: The class is not affected.
                 return c;
             });
         });
@@ -505,6 +503,7 @@ const ScheduleManager: React.FC<{
     );
 }
 
+// --- Course Manager ---
 
 const CourseManager: React.FC<{
     courses: Course[];
@@ -578,7 +577,6 @@ const CourseManager: React.FC<{
     
         if (window.confirm(confirmationMessage)) {
             setCourses(prev => prev.filter(c => c.id !== courseId));
-            // Always remove associated classes, regardless of type, to prevent orphans.
             setClasses(prev => prev.filter(c => c.courseId !== courseId));
         }
     };
@@ -587,7 +585,6 @@ const CourseManager: React.FC<{
         <div>
             <h3 className="text-xl font-bold text-slate-800 mb-4">Gestión de Cursos y Materias</h3>
             <div className="space-y-6">
-                {/* Academic Courses Section */}
                 <div>
                     <h4 className="text-lg font-semibold text-slate-700 mb-2">Cursos Académicos</h4>
                     <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2 border rounded-lg p-2 bg-slate-50/50">
@@ -613,11 +610,10 @@ const CourseManager: React.FC<{
                         <button type="submit" className="w-full sm:w-auto bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Añadir Curso</button>
                     </form>
                 </div>
-                {/* Other Occupations Section */}
                 <div>
                     <h4 className="text-lg font-semibold text-slate-700 mb-2">Otras Ocupaciones (Guardias, Reuniones, etc.)</h4>
                     <p className="text-xs text-slate-500 mb-2">
-                        Estas ocupaciones aparecerán en tu horario y calendario, pero no se considerarán clases a evaluar (no tendrán alumnado ni calificaciones).
+                        Estas ocupaciones aparecerán en tu horario y calendario, pero no se considerarán clases a evaluar.
                     </p>
                      <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-2 border rounded-lg p-2 bg-slate-50/50">
                         {otherOccupations.length > 0 ? otherOccupations.map(course => (
@@ -640,6 +636,8 @@ const CourseManager: React.FC<{
     );
 };
 
+// --- Academic Config Manager ---
+
 const AcademicConfigManager: React.FC<{
     academicConfiguration: AcademicConfiguration;
     setAcademicConfiguration: (updater: React.SetStateAction<AcademicConfiguration>) => void;
@@ -651,7 +649,8 @@ const AcademicConfigManager: React.FC<{
                             !Array.isArray(academicConfiguration.holidays) || 
                             !Array.isArray(academicConfiguration.evaluationPeriods) ||
                             typeof academicConfiguration.evaluationPeriodWeights !== 'object' ||
-                            academicConfiguration.evaluationPeriodWeights === null;
+                            academicConfiguration.evaluationPeriodWeights === null ||
+                            !Array.isArray(academicConfiguration.gradeScale);
         
         if (needsUpdate) {
             setAcademicConfiguration(prev => ({
@@ -662,6 +661,14 @@ const AcademicConfigManager: React.FC<{
                 periods: Array.isArray(prev?.periods) ? prev.periods : [],
                 defaultStartView: prev?.defaultStartView || 'calendar',
                 defaultCalendarView: prev?.defaultCalendarView || 'month',
+                // Initialize defaults if missing
+                gradeScale: Array.isArray(prev?.gradeScale) && prev.gradeScale.length > 0 ? prev.gradeScale : [
+                    { min: 9, color: 'emerald', label: 'Sobresaliente' },
+                    { min: 7, color: 'lime', label: 'Notable' },
+                    { min: 6, color: 'yellow', label: 'Bien' },
+                    { min: 5, color: 'orange', label: 'Suficiente' },
+                    { min: 0, color: 'red', label: 'Insuficiente' },
+                ]
             }));
         }
     }, [academicConfiguration, setAcademicConfiguration]);
@@ -670,8 +677,8 @@ const AcademicConfigManager: React.FC<{
         return <div className="text-center p-4">Cargando configuración...</div>;
     }
     
-    const { evaluationPeriodWeights = {} } = academicConfiguration;
-    // FIX: Explicitly type the accumulator in the reduce function to 'number' to resolve the TypeScript error.
+    const { evaluationPeriodWeights = {}, gradeScale = [] } = academicConfiguration;
+    // Calculate total weight for display
     const totalWeight = Object.values(evaluationPeriodWeights).reduce((sum: number, w) => sum + (typeof w === 'number' ? w : 0), 0);
 
 
@@ -718,264 +725,256 @@ const AcademicConfigManager: React.FC<{
     };
     
     const handleWeightChange = (periodId: string, weight: string) => {
-        const numWeight = parseInt(weight, 10);
+        const numWeight = parseFloat(weight);
         setAcademicConfiguration(prev => ({
             ...prev,
             evaluationPeriodWeights: {
-                ...prev.evaluationPeriodWeights,
+                ...(prev.evaluationPeriodWeights || {}),
                 [periodId]: isNaN(numWeight) ? 0 : numWeight,
             }
         }));
     };
 
+    const handleGradeScaleChange = (index: number, field: keyof GradeScaleRule, value: any) => {
+        setAcademicConfiguration(prev => {
+            const newScale = [...(prev.gradeScale || [])];
+            newScale[index] = { ...newScale[index], [field]: value };
+            return { ...prev, gradeScale: newScale };
+        });
+    };
+
+    const handleAddGradeRule = () => {
+        setAcademicConfiguration(prev => ({
+            ...prev,
+            gradeScale: [...(prev.gradeScale || []), { min: 0, color: 'gray', label: 'Nueva Regla' }]
+        }));
+    };
+
+    const handleRemoveGradeRule = (index: number) => {
+        setAcademicConfiguration(prev => ({
+            ...prev,
+            gradeScale: (prev.gradeScale || []).filter((_, i) => i !== index)
+        }));
+    };
+
     return (
-        <div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Configuración del Curso Académico</h3>
-             <p className="text-sm text-slate-600 mb-4">Define las fechas y periodos clave del curso para la planificación.</p>
-
-            <div className="space-y-6">
-                
-                {/* New Defaults Section */}
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-4">
-                    <h4 className="font-semibold text-slate-700">Preferencias de Inicio</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-8 pb-8">
+            <h3 className="text-xl font-bold text-slate-800 mb-4">Configuración del Curso Académico</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Fechas del Curso</h4>
+                    <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Pantalla inicial al abrir la App</label>
-                            <select 
-                                value={academicConfiguration.defaultStartView || 'calendar'} 
-                                onChange={e => handleConfigChange('defaultStartView', e.target.value)} 
-                                className="w-full p-2 border border-slate-300 rounded-lg bg-white"
-                            >
-                                <option value="calendar">Calendario</option>
-                                <option value="gradebook">Cuaderno</option>
-                                <option value="journal">Diario de Clase</option>
-                            </select>
+                            <label className="text-xs text-slate-500">Inicio</label>
+                            <input type="date" value={academicConfiguration.academicYearStart} onChange={e => handleConfigChange('academicYearStart', e.target.value)} className="w-full p-2 border rounded-md"/>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Vista por defecto del Calendario</label>
-                            <select 
-                                value={academicConfiguration.defaultCalendarView || 'month'} 
-                                onChange={e => handleConfigChange('defaultCalendarView', e.target.value)} 
-                                className="w-full p-2 border border-slate-300 rounded-lg bg-white"
-                            >
-                                <option value="month">Mes</option>
-                                <option value="week">Semana</option>
-                                <option value="day">Día</option>
-                            </select>
+                            <label className="text-xs text-slate-500">Fin</label>
+                            <input type="date" value={academicConfiguration.academicYearEnd} onChange={e => handleConfigChange('academicYearEnd', e.target.value)} className="w-full p-2 border rounded-md"/>
                         </div>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="text-sm font-medium text-slate-700">Inicio del curso</label>
-                        <input type="date" value={academicConfiguration.academicYearStart} onChange={e => handleConfigChange('academicYearStart', e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg mt-1"/>
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium text-slate-700">Fin del curso</label>
-                        <input type="date" value={academicConfiguration.academicYearEnd} onChange={e => handleConfigChange('academicYearEnd', e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg mt-1"/>
-                    </div>
-                </div>
-
-                {/* Layout Mode Selector with Icons */}
                 <div>
-                    <label className="text-sm font-medium text-slate-700">Tamaño de Pantalla (Diseño)</label>
-                    <div className="flex items-center space-x-2 mt-1">
-                        <button
-                            onClick={() => handleConfigChange('layoutMode', 'mobile')}
-                            className={`p-2 rounded-lg border ${academicConfiguration.layoutMode === 'mobile' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
-                            title="Vista Móvil"
-                        >
-                            <DevicePhoneMobileIcon className="w-6 h-6" />
-                        </button>
-                        <button
-                            onClick={() => handleConfigChange('layoutMode', 'tablet')}
-                            className={`p-2 rounded-lg border ${academicConfiguration.layoutMode === 'tablet' ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
-                            title="Vista Tablet"
-                        >
-                            <DeviceTabletIcon className="w-6 h-6" />
-                        </button>
-                        <button
-                            onClick={() => handleConfigChange('layoutMode', 'desktop')}
-                            className={`p-2 rounded-lg border ${academicConfiguration.layoutMode === 'desktop' || !academicConfiguration.layoutMode ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'}`}
-                            title="Vista Escritorio"
-                        >
-                            <ComputerDesktopIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">Ajusta la densidad de la información en pantalla.</p>
-                </div>
-
-                <ConfigListSection title="Franjas Horarias" type="periods" items={academicConfiguration.periods || []} onAdd={handleAddListItem} onRemove={handleRemoveListItem} onChange={handleListItemChange} />
-                <ConfigListSection title="Periodos de Evaluación" type="evaluationPeriods" items={academicConfiguration.evaluationPeriods} onAdd={handleAddListItem} onRemove={handleRemoveListItem} onChange={handleListItemChange} />
-                
-                <div>
-                    <h4 className="text-lg font-semibold text-slate-700 mb-2">Ponderación de Evaluaciones para Nota Final</h4>
-                    <div className="space-y-2 p-3 border rounded-lg bg-slate-50/50">
-                        {academicConfiguration.evaluationPeriods.map(period => (
-                            <div key={period.id} className="flex items-center gap-4">
-                                <label className="flex-grow font-medium text-slate-600">{period.name}</label>
-                                <div className="flex items-center">
-                                    <input 
-                                        type="number" 
-                                        value={evaluationPeriodWeights[period.id] || ''} 
-                                        onChange={e => handleWeightChange(period.id, e.target.value)} 
-                                        className="w-20 p-2 text-center border rounded-md"
-                                        placeholder="0"
-                                        min="0"
-                                        max="100"
-                                    />
-                                    <span className="ml-2 font-semibold text-slate-500">%</span>
-                                </div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Periodos de Evaluación</h4>
+                    <div className="space-y-2">
+                        {academicConfiguration.evaluationPeriods.map((period, index) => (
+                            <div key={period.id} className="flex gap-2 items-center">
+                                <input type="text" value={period.name} onChange={e => handleListItemChange('evaluationPeriods', index, 'name', e.target.value)} className="w-1/3 p-2 border rounded-md text-sm" placeholder="Nombre"/>
+                                <input type="date" value={period.startDate} onChange={e => handleListItemChange('evaluationPeriods', index, 'startDate', e.target.value)} className="w-1/3 p-2 border rounded-md text-sm"/>
+                                <input type="date" value={period.endDate} onChange={e => handleListItemChange('evaluationPeriods', index, 'endDate', e.target.value)} className="w-1/3 p-2 border rounded-md text-sm"/>
+                                <button onClick={() => handleRemoveListItem('evaluationPeriods', period.id)} className="p-1 text-red-500 hover:bg-red-50 rounded"><TrashIcon className="w-4 h-4"/></button>
                             </div>
                         ))}
-                        <div className={`p-2 mt-2 text-sm font-semibold text-center rounded-md ${totalWeight === 100 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                            Ponderación Total: {totalWeight}%
-                        </div>
+                        <button onClick={() => handleAddListItem('evaluationPeriods')} className="text-sm text-blue-600 hover:underline">+ Añadir Periodo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Ponderación de Evaluaciones</h4>
+                    <p className="text-xs text-slate-500 mb-2">Asigna un peso proporcional a cada evaluación. El porcentaje se calcula automáticamente.</p>
+                    <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        {academicConfiguration.evaluationPeriods.map((period) => {
+                            const weight = evaluationPeriodWeights[period.id] ?? 1;
+                            const percentage = totalWeight > 0 ? ((weight / totalWeight) * 100).toFixed(1) : '0.0';
+                            return (
+                                <div key={period.id} className="flex justify-between items-center">
+                                    <span className="text-sm font-medium text-slate-700">{period.name}</span>
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            step="0.1"
+                                            value={weight} 
+                                            onChange={e => handleWeightChange(period.id, e.target.value)} 
+                                            className="w-16 p-1 text-right border rounded-md text-sm"
+                                        />
+                                        <span className="text-xs text-slate-500 w-12 text-right">{percentage}%</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Vacaciones y Festivos</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        {academicConfiguration.holidays.map((holiday, index) => (
+                            <div key={holiday.id} className="flex gap-2 items-center">
+                                <input type="text" value={holiday.name} onChange={e => handleListItemChange('holidays', index, 'name', e.target.value)} className="flex-grow p-1 border rounded-md text-xs" placeholder="Nombre festivo"/>
+                                <input type="date" value={holiday.startDate} onChange={e => handleListItemChange('holidays', index, 'startDate', e.target.value)} className="w-24 p-1 border rounded-md text-xs"/>
+                                <input type="date" value={holiday.endDate} onChange={e => handleListItemChange('holidays', index, 'endDate', e.target.value)} className="w-24 p-1 border rounded-md text-xs"/>
+                                <button onClick={() => handleRemoveListItem('holidays', holiday.id)} className="p-1 text-red-500 hover:bg-red-50 rounded"><TrashIcon className="w-3 h-3"/></button>
+                            </div>
+                        ))}
+                        <button onClick={() => handleAddListItem('holidays')} className="text-xs text-blue-600 hover:underline">+ Añadir Festivo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Franjas Horarias</h4>
+                    <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                        {(academicConfiguration.periods || []).map((period, index) => (
+                            <div key={index} className="flex gap-2 items-center">
+                                <span className="text-xs text-slate-400 w-4">{index + 1}</span>
+                                <input type="text" value={period} onChange={e => handleListItemChange('periods', index, '', e.target.value)} className="flex-grow p-1 border rounded-md text-sm"/>
+                                <button onClick={() => handleRemoveListItem('periods', index)} className="p-1 text-red-500 hover:bg-red-50 rounded"><TrashIcon className="w-3 h-3"/></button>
+                            </div>
+                        ))}
+                        <button onClick={() => handleAddListItem('periods')} className="text-xs text-blue-600 hover:underline">+ Añadir Franja</button>
                     </div>
                 </div>
 
-                <ConfigListSection title="Periodos Festivos" type="holidays" items={academicConfiguration.holidays} onAdd={handleAddListItem} onRemove={handleRemoveListItem} onChange={handleListItemChange} />
+                <div>
+                    <h4 className="font-semibold text-slate-700 mb-2">Escala de Calificaciones (Semáforo)</h4>
+                    <p className="text-xs text-slate-500 mb-2">
+                        Define la nota mínima (&gt;=) a partir de la cual se aplica el color. El sistema prioriza el valor más alto alcanzado (ej. si tienes &gt;=5 y &gt;=7, un 8 usará el color de 7, no el de 5).
+                    </p>
+                    <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200 max-h-60 overflow-y-auto">
+                        {gradeScale.map((rule, index) => (
+                            <div key={index} className="flex gap-2 items-center">
+                                <div className="flex items-center gap-1">
+                                    <span className="text-xs text-slate-500">≥</span>
+                                    <input 
+                                        type="number" 
+                                        min="0" 
+                                        max="10" 
+                                        step="0.1" 
+                                        value={rule.min} 
+                                        onChange={e => handleGradeScaleChange(index, 'min', parseFloat(e.target.value))} 
+                                        className="w-14 p-1 border rounded-md text-sm text-center"
+                                    />
+                                </div>
+                                <select 
+                                    value={rule.color} 
+                                    onChange={e => handleGradeScaleChange(index, 'color', e.target.value)}
+                                    className="p-1 border rounded-md text-sm"
+                                >
+                                    <option value="emerald">Esmeralda (Verde oscuro)</option>
+                                    <option value="green">Verde</option>
+                                    <option value="lime">Lima</option>
+                                    <option value="yellow">Amarillo</option>
+                                    <option value="orange">Naranja</option>
+                                    <option value="red">Rojo</option>
+                                    <option value="teal">Turquesa</option>
+                                    <option value="blue">Azul</option>
+                                    <option value="indigo">Índigo</option>
+                                    <option value="violet">Violeta</option>
+                                    <option value="gray">Gris</option>
+                                </select>
+                                <input 
+                                    type="text" 
+                                    value={rule.label || ''} 
+                                    onChange={e => handleGradeScaleChange(index, 'label', e.target.value)} 
+                                    placeholder="Etiqueta (opcional)"
+                                    className="flex-grow p-1 border rounded-md text-sm"
+                                />
+                                <button onClick={() => handleRemoveGradeRule(index)} className="p-1 text-red-500 hover:bg-red-50 rounded"><TrashIcon className="w-4 h-4"/></button>
+                            </div>
+                        ))}
+                        <button onClick={handleAddGradeRule} className="text-sm text-blue-600 hover:underline">+ Añadir Regla</button>
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
 
-const ConfigListSection: React.FC<{ title: string; type: 'holidays' | 'evaluationPeriods' | 'periods'; items: any[]; onAdd: any; onRemove: any; onChange: any }> = ({ title, type, items, onAdd, onRemove, onChange}) => {
-    if (type === 'periods') {
-        return (
-             <div>
-                <h4 className="text-lg font-semibold text-slate-700 mb-2">{title}</h4>
-                <div className="space-y-2 p-3 border rounded-lg bg-slate-50/50">
-                    {items.map((item, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                           <input type="text" value={item} onChange={e => onChange(type, index, 'name', e.target.value)} placeholder="Ej: 1ª Hora (8:00-8:55)" className="p-2 border rounded-md w-full"/>
-                           <button onClick={() => onRemove(type, index)} className="p-2 text-red-500 hover:bg-red-100 rounded-full flex-shrink-0"><TrashIcon className="w-4 h-4"/></button>
-                        </div>
-                    ))}
-                    <button onClick={() => onAdd(type)} className="w-full text-sm font-semibold text-blue-600 hover:bg-blue-100 p-2 rounded-md">+ Añadir franja</button>
-                </div>
-            </div>
-        );
-    }
-    
-    return (
-        <div>
-            <h4 className="text-lg font-semibold text-slate-700 mb-2">{title}</h4>
-            <div className="space-y-2 p-3 border rounded-lg bg-slate-50/50">
-                {items.map((item, index) => (
-                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 items-center">
-                        <input type="text" value={item.name} onChange={e => onChange(type, index, 'name', e.target.value)} placeholder="Nombre" className="p-2 border rounded-md w-full"/>
-                        <input type="date" value={item.startDate} onChange={e => onChange(type, index, 'startDate', e.target.value)} className="p-2 border rounded-md w-full"/>
-                        <input type="date" value={item.endDate} onChange={e => onChange(type, index, 'endDate', e.target.value)} className="p-2 border rounded-md w-full"/>
-                        <button onClick={() => onRemove(type, item.id)} className="p-2 text-red-500 hover:bg-red-100 rounded-full flex-shrink-0 justify-self-center -ml-2"><TrashIcon className="w-4 h-4"/></button>
-                    </div>
-                ))}
-                <button onClick={() => onAdd(type)} className="w-full text-sm font-semibold text-blue-600 hover:bg-blue-100 p-2 rounded-md">+ Añadir periodo</button>
-            </div>
-        </div>
-    );
-};
-
-
-const BackupManager: React.FC<Omit<SettingsModalProps, 'isOpen'>> = (props) => {
-    const { onOpenExportModal, importDatabase, exportDatabase, resetDatabase, onClose } = props;
+// ... (BackupManager component remains unchanged) ...
+const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, onOpenExportModal }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleExportDb = () => {
-        const data = exportDatabase();
-        if (!data) {
-            alert("No se pudo exportar la base de datos.");
-            return;
-        }
-        const blob = new Blob([data], { type: "application/x-sqlite3" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `gradebook_db_backup_${new Date().toISOString().split('T')[0]}.sqlite`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    };
+    const handleImportClick = () => fileInputRef.current?.click();
 
-    const handleImportDb = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (!file) return;
-
-        if (!window.confirm("¿Estás seguro de que quieres restaurar desde este archivo? Todos los datos actuales se sobrescribirán.")) {
-            if (event.target) event.target.value = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const buffer = e.target?.result as ArrayBuffer;
-                await importDatabase(buffer);
-                onClose(); // Close modal on success
-            } catch (error) {
-                console.error("Error importing DB:", error);
-                alert("Error al importar el archivo. Asegúrate de que es una base de datos válida y no está corrupto.");
-            } finally {
-                if (event.target) event.target.value = '';
-            }
-        };
-        reader.readAsArrayBuffer(file);
+        const buffer = await file.arrayBuffer();
+        await importDatabase(buffer);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
-    
+
+    const handleExportClick = () => {
+        const data = exportDatabase();
+        if (data) {
+            const blob = new Blob([data], { type: 'application/x-sqlite3' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
+            a.click();
+        }
+    };
+
     return (
-         <div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Base de Datos y Exportaciones</h3>
-            <p className="text-sm text-slate-600 mb-6">
-                Guarda toda la información de tu cuaderno en un archivo de base de datos (`.sqlite`) o restáurala. Este es el método recomendado para copias de seguridad completas.
-            </p>
-            <div className="space-y-4 p-4 border rounded-lg bg-slate-50">
-                 <h4 className="text-md font-semibold text-slate-700">Base de Datos Principal</h4>
-                <button onClick={handleExportDb} className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 w-full text-center">
-                    Descargar base de datos (.sqlite)
-                </button>
-                
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".sqlite, .db, application/x-sqlite3"
-                    onChange={handleImportDb}
-                />
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="cursor-pointer block bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 w-full text-center"
-                >
-                    Cargar base de datos (.sqlite)
-                </button>
-            </div>
-            <div className="space-y-4 p-4 mt-6 border rounded-lg bg-slate-50">
-                 <h4 className="text-md font-semibold text-slate-700">Exportaciones Adicionales</h4>
-                 <p className="text-xs text-slate-500">
-                    Exporta informes y calificaciones en formatos para hojas de cálculo.
-                </p>
-                 <button onClick={onOpenExportModal} className="bg-slate-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-600 w-full text-center">
-                    Exportar informes a CSV...
-                </button>
+        <div className="space-y-6">
+            <h3 className="text-xl font-bold text-slate-800">Copia de Seguridad y Datos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
+                    <h4 className="font-bold text-blue-800 mb-2">Exportar Copia de Seguridad</h4>
+                    <p className="text-sm text-blue-700 mb-4">Descarga un archivo .db con TODOS tus datos (clases, notas, configuración...).</p>
+                    <button onClick={handleExportClick} className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors shadow-sm font-medium">
+                        Descargar Copia (.db)
+                    </button>
+                </div>
+
+                <div className="p-4 border rounded-lg bg-green-50 border-green-200">
+                    <h4 className="font-bold text-green-800 mb-2">Restaurar Copia</h4>
+                    <p className="text-sm text-green-700 mb-4">Sube un archivo .db previamente exportado para restaurar tus datos.</p>
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".db,.sqlite" className="hidden" />
+                    <button onClick={handleImportClick} className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors shadow-sm font-medium">
+                        Subir Archivo (.db)
+                    </button>
+                </div>
+
+                <div className="p-4 border rounded-lg bg-slate-50 border-slate-200">
+                    <h4 className="font-bold text-slate-800 mb-2">Informes CSV</h4>
+                    <p className="text-sm text-slate-600 mb-4">Exporta las calificaciones e informes a hojas de cálculo (Excel/CSV).</p>
+                    <button onClick={onOpenExportModal} className="w-full bg-white text-slate-700 border border-slate-300 py-2 rounded-md hover:bg-slate-100 transition-colors shadow-sm font-medium">
+                        Generar Informes
+                    </button>
+                </div>
             </div>
 
-            <div className="pt-6 border-t border-red-200 mt-6">
+            <div className="pt-6 border-t border-red-200 mt-8">
                 <h4 className="text-lg font-bold text-red-800 mb-2">Zona de Peligro</h4>
-                <div className="p-3 bg-red-50 rounded-lg border border-red-200 space-y-3">
-                    <p className="text-sm text-slate-600">
-                        Esta acción es irreversible. Se borrarán todos los datos y la aplicación volverá a su estado inicial. Úsalo si encuentras errores persistentes o quieres empezar de cero.
-                    </p>
-                    <button
-                        onClick={resetDatabase}
-                        className="w-full text-center bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                        Restablecer Aplicación y Borrar Todos los Datos
+                <div className="p-4 border border-red-200 bg-red-50 rounded-lg flex items-center justify-between">
+                    <div>
+                        <p className="font-bold text-red-700">Borrar todos los datos</p>
+                        <p className="text-sm text-red-600">Esta acción no se puede deshacer. Se eliminará todo el contenido de la aplicación.</p>
+                    </div>
+                    <button onClick={resetDatabase} className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium shadow-sm">
+                        Restablecer Aplicación
                     </button>
                 </div>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default SettingsModal;

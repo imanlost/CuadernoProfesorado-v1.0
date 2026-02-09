@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
 import type { Student, Assignment, Grade, EvaluationCriterion, EvaluationTool, Rubric } from '../types';
 import { calculateToolGlobalScore } from '../services/gradeCalculations';
+import { ChevronRightIcon } from './Icons';
 
 interface GradeEntryModalProps {
   isOpen: boolean;
@@ -11,18 +12,22 @@ interface GradeEntryModalProps {
   assignment: Assignment;
   grade: Grade | null;
   criteriaList: EvaluationCriterion[];
-  onSave: (studentId: string, assignmentId: string, data: { criterionScores: Record<string, number | null> } | { toolResults: Record<string, boolean | string> }) => void;
+  onSave: (studentId: string, assignmentId: string, data: { criterionScores: Record<string, number | null> } | { toolResults: Record<string, boolean | string> }, nextStudent?: boolean) => void;
   evaluationTools: EvaluationTool[];
   allAssignments: Assignment[];
+  students: Student[]; // Added to know the list for navigation
 }
 
 const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
-  const { isOpen, onClose, student, assignment, grade, criteriaList, onSave, evaluationTools, allAssignments } = props;
+  const { isOpen, onClose, student, assignment, grade, criteriaList, onSave, evaluationTools, allAssignments, students } = props;
   
   const [scores, setScores] = useState<Record<string, number | null>>({});
   const [toolResults, setToolResults] = useState<Record<string, boolean | string>>({});
   const [singleGrade, setSingleGrade] = useState<string>('');
   
+  const currentStudentIndex = useMemo(() => students.findIndex(s => s.id === student.id), [students, student.id]);
+  const hasNextStudent = currentStudentIndex < students.length - 1;
+
   const evaluationTool = useMemo(() => {
     if (assignment.evaluationMethod !== 'direct_grade' && assignment.evaluationToolId) {
         return evaluationTools.find(t => t.id === assignment.evaluationToolId);
@@ -54,7 +59,7 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
             setSingleGrade('');
         }
     }
-  }, [isOpen, grade, assignment, isRecoveryTaskWithAssignments]);
+  }, [isOpen, grade, assignment, isRecoveryTaskWithAssignments, student.id]); // Added student.id dependency to reset when switching students
 
   const handleScoreChange = (criterionId: string, value: string) => {
     setSingleGrade('');
@@ -99,25 +104,20 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
       setToolResults(prev => ({ ...prev, [itemId]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSaveInternal = (e: React.FormEvent, next: boolean) => {
     e.preventDefault();
     if (assignment.evaluationMethod === 'direct_grade') {
         if (isRecoveryTaskWithAssignments) {
             const gradeValue = singleGrade !== '' ? parseFloat(singleGrade.replace(',', '.')) : null;
             const newScores: Record<string, number | null> = {};
             if (gradeValue !== null && !isNaN(gradeValue)) {
-                // Store the single grade. The calculation service will use this value to override other criteria
-                // and to display it in the recovery assignment's cell.
                 newScores['recovery_grade'] = Math.max(0, Math.min(10, gradeValue));
             }
-            onSave(student.id, assignment.id, { criterionScores: newScores });
+            onSave(student.id, assignment.id, { criterionScores: newScores }, next);
         } else {
-            onSave(student.id, assignment.id, { criterionScores: scores });
+            onSave(student.id, assignment.id, { criterionScores: scores }, next);
         }
     } else {
-        // Handling Evaluation Tools (Checklist, Rubric, Scale)
-        // If the assignment has LINKED CRITERIA, it means the user selected "Global Grading Mode".
-        // We calculate the tool's global score and apply it to all linked criteria.
         if (assignment.linkedCriteria && assignment.linkedCriteria.length > 0 && evaluationTool) {
             const globalScore = calculateToolGlobalScore(evaluationTool, toolResults);
             const derivedCriterionScores: Record<string, number | null> = {};
@@ -126,15 +126,9 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
                 derivedCriterionScores[lc.criterionId] = globalScore;
             });
 
-            // We save both toolResults (for record) and criterionScores (for gradebook logic)
-            onSave(student.id, assignment.id, { toolResults, criterionScores: derivedCriterionScores });
+            onSave(student.id, assignment.id, { toolResults, criterionScores: derivedCriterionScores }, next);
         } else {
-            // Classic mode: Internal linking. Just save toolResults. 
-            // The main gradebook logic will derive criterion scores on fly or we can let GradebookTable handle it.
-            // Actually, GradebookTable expects us to NOT pass criterionScores if we want it to calculate from tool defaults,
-            // OR we can calculate it here if we wanted to freeze it. 
-            // The standard flow in GradebookTable handles { toolResults } correctly by calling calculateCriterionScoresFromTool.
-            onSave(student.id, assignment.id, { toolResults });
+            onSave(student.id, assignment.id, { toolResults }, next);
         }
     }
   };
@@ -271,22 +265,25 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
   
   return (
       <Modal isOpen={isOpen} onClose={onClose} title={`Calificar: ${assignment.name}`} size={assignment.evaluationMethod === 'rubric' ? '4xl' : '2xl'}>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <p className="text-slate-600 font-medium">Alumn@: <span className="font-bold">{student.name}</span></p>
           
           {assignment.evaluationMethod === 'direct_grade' ? renderDirectGradeInputs() : renderToolInputs()}
 
-          <div className="flex justify-end items-center pt-4 border-t">
-            <div>
+          <div className="flex justify-end items-center pt-4 border-t gap-3">
               <button type="button" onClick={onClose} className="bg-white py-2 px-4 border rounded-md shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50">
                 Cancelar
               </button>
-              <button type="submit" className="ml-3 inline-flex justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                Guardar Notas
+              <button onClick={(e) => handleSaveInternal(e, false)} className="inline-flex justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                Guardar
               </button>
-            </div>
+              {hasNextStudent && (
+                  <button onClick={(e) => handleSaveInternal(e, true)} className="inline-flex items-center justify-center py-2 px-4 border shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                    Guardar y Siguiente <ChevronRightIcon className="w-4 h-4 ml-1" />
+                  </button>
+              )}
           </div>
-        </form>
+        </div>
       </Modal>
   );
 };

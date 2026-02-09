@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import type { ClassData, SpecificCompetence, KeyCompetence, EvaluationCriterion, AcademicConfiguration, Student } from '../types';
-import { calculateStudentKeyCompetenceGrades, calculateStudentCompetenceGrades } from '../services/gradeCalculations';
+import { calculateStudentKeyCompetenceGrades, calculateStudentCompetenceGrades, getGradeColorClass } from '../services/gradeCalculations';
 import DrilldownModal, { DrilldownData } from './DrilldownModal';
 
 interface KeyCompetenceAchievementProps {
@@ -11,19 +11,6 @@ interface KeyCompetenceAchievementProps {
   criteria: EvaluationCriterion[];
   academicConfiguration: AcademicConfiguration;
 }
-
-const getGradeStyleClasses = (grade: number | null) => {
-    if (grade === null || grade === undefined) {
-        return { bg: 'bg-transparent', text: 'text-slate-500' };
-    }
-    if (grade < 5) {
-        return { bg: 'bg-red-100', text: 'text-red-800' };
-    }
-    if (grade < 7) {
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
-    }
-    return { bg: 'bg-green-100', text: 'text-green-800' };
-};
 
 const KeyCompetenceAchievement: React.FC<KeyCompetenceAchievementProps> = ({ classData, competences, keyCompetences, criteria, academicConfiguration }) => {
     const [selectedPeriodId, setSelectedPeriodId] = useState<string>('all');
@@ -112,9 +99,9 @@ const KeyCompetenceAchievement: React.FC<KeyCompetenceAchievementProps> = ({ cla
                                 </td>
                                 {keyCompetences.map(kc => {
                                     const grade = studentKeyCompetenceGrades.get(student.id)?.get(kc.id) ?? null;
-                                    const style = getGradeStyleClasses(grade);
+                                    const styleClass = getGradeColorClass(grade, academicConfiguration.gradeScale);
                                     return (
-                                        <td key={kc.id} className={`px-3 py-2 text-center font-bold text-base cursor-pointer ${style.bg} ${style.text}`} onClick={() => handleCellClick(student, kc)}>
+                                        <td key={kc.id} className={`px-3 py-2 text-center font-bold text-base cursor-pointer ${styleClass}`} onClick={() => handleCellClick(student, kc)}>
                                             {grade !== null ? grade.toFixed(2) : '-'}
                                         </td>
                                     );
@@ -127,9 +114,9 @@ const KeyCompetenceAchievement: React.FC<KeyCompetenceAchievementProps> = ({ cla
                             <td className="px-6 py-3 font-bold text-slate-800 sticky left-0 bg-slate-100 z-10 w-52">Media de la Clase</td>
                             {keyCompetences.map(kc => {
                                 const avgGrade = classAverageGrades.get(kc.id) ?? null;
-                                const style = getGradeStyleClasses(avgGrade);
+                                const styleClass = getGradeColorClass(avgGrade, academicConfiguration.gradeScale);
                                 return (
-                                    <td key={kc.id} className={`px-3 py-2 text-center font-bold text-base ${style.bg} ${style.text}`}>
+                                    <td key={kc.id} className={`px-3 py-2 text-center font-bold text-base ${styleClass}`}>
                                         {avgGrade !== null ? avgGrade.toFixed(2) : '-'}
                                     </td>
                                 );
@@ -138,7 +125,12 @@ const KeyCompetenceAchievement: React.FC<KeyCompetenceAchievementProps> = ({ cla
                     </tfoot>
                 </table>
             </div>
-            <DrilldownModal isOpen={!!drilldownData} onClose={() => setDrilldownData(null)} data={drilldownData} />
+            <DrilldownModal 
+                isOpen={!!drilldownData} 
+                onClose={() => setDrilldownData(null)} 
+                data={drilldownData} 
+                gradeScale={academicConfiguration.gradeScale}
+            />
         </div>
     );
 };

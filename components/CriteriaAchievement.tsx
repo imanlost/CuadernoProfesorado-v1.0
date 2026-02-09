@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import type { ClassData, EvaluationCriterion, SpecificCompetence, AcademicConfiguration, Student } from '../types';
-import { calculateStudentCriterionGrades } from '../services/gradeCalculations';
+import { calculateStudentCriterionGrades, getGradeColorClass } from '../services/gradeCalculations';
 import DrilldownModal, { DrilldownData } from './DrilldownModal';
 
 interface CriteriaAchievementProps {
@@ -10,20 +10,6 @@ interface CriteriaAchievementProps {
   competences: SpecificCompetence[];
   academicConfiguration: AcademicConfiguration;
 }
-
-const getGradeStyleClasses = (grade: number | null) => {
-    if (grade === null || grade === undefined) {
-        return { bg: 'bg-transparent', text: 'text-slate-500' };
-    }
-    if (grade < 5) {
-        return { bg: 'bg-red-100', text: 'text-red-800' };
-    }
-    if (grade < 7) {
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
-    }
-    return { bg: 'bg-green-100', text: 'text-green-800' };
-};
-
 
 const CriteriaAchievement: React.FC<CriteriaAchievementProps> = ({ classData, criteria, competences, academicConfiguration }) => {
     const [selectedPeriodId, setSelectedPeriodId] = useState<string>('all');
@@ -117,9 +103,9 @@ const CriteriaAchievement: React.FC<CriteriaAchievementProps> = ({ classData, cr
                                 </td>
                                 {criteria.map(criterion => {
                                     const grade = studentCriterionGrades.get(student.id)?.get(criterion.id) ?? null;
-                                    const style = getGradeStyleClasses(grade);
+                                    const styleClass = getGradeColorClass(grade, academicConfiguration.gradeScale);
                                     return (
-                                        <td key={criterion.id} className={`px-3 py-2 text-center font-bold text-base cursor-pointer ${style.bg} ${style.text}`} onClick={() => handleCellClick(student, criterion)}>
+                                        <td key={criterion.id} className={`px-3 py-2 text-center font-bold text-base cursor-pointer ${styleClass}`} onClick={() => handleCellClick(student, criterion)}>
                                             {grade !== null ? grade.toFixed(2) : '-'}
                                         </td>
                                     );
@@ -132,9 +118,9 @@ const CriteriaAchievement: React.FC<CriteriaAchievementProps> = ({ classData, cr
                             <td className="px-6 py-3 font-bold text-slate-800 sticky left-0 bg-slate-100 z-10 w-52">Media de la Clase</td>
                             {criteria.map(criterion => {
                                 const avgGrade = classAverageGrades.get(criterion.id) ?? null;
-                                const style = getGradeStyleClasses(avgGrade);
+                                const styleClass = getGradeColorClass(avgGrade, academicConfiguration.gradeScale);
                                 return (
-                                    <td key={criterion.id} className={`px-3 py-2 text-center font-bold text-base ${style.bg} ${style.text}`}>
+                                    <td key={criterion.id} className={`px-3 py-2 text-center font-bold text-base ${styleClass}`}>
                                         {avgGrade !== null ? avgGrade.toFixed(2) : '-'}
                                     </td>
                                 );
@@ -143,7 +129,12 @@ const CriteriaAchievement: React.FC<CriteriaAchievementProps> = ({ classData, cr
                     </tfoot>
                 </table>
             </div>
-            <DrilldownModal isOpen={!!drilldownData} onClose={() => setDrilldownData(null)} data={drilldownData} />
+            <DrilldownModal 
+                isOpen={!!drilldownData} 
+                onClose={() => setDrilldownData(null)} 
+                data={drilldownData} 
+                gradeScale={academicConfiguration.gradeScale}
+            />
         </div>
     );
 };

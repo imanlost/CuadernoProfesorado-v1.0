@@ -83,9 +83,9 @@ export const INITIAL_ACADEMIC_CONFIGURATION: AcademicConfiguration = {
         { id: 'ep-3', name: '3ª Evaluación', startDate: '2025-03-31', endDate: '2025-06-20' },
     ],
     evaluationPeriodWeights: {
-        'ep-1': 34,
-        'ep-2': 33,
-        'ep-3': 33
+        'ep-1': 1,
+        'ep-2': 1,
+        'ep-3': 1
     },
     layoutMode: 'tablet',
     periods: [
@@ -99,5 +99,12 @@ export const INITIAL_ACADEMIC_CONFIGURATION: AcademicConfiguration = {
         '6ª Hora (13:35-14:30)',
     ],
     defaultStartView: 'calendar',
-    defaultCalendarView: 'month'
+    defaultCalendarView: 'month',
+    gradeScale: [
+        { min: 9, color: 'emerald', label: 'Sobresaliente' },
+        { min: 7, color: 'lime', label: 'Notable' },
+        { min: 6, color: 'yellow', label: 'Bien' },
+        { min: 5, color: 'orange', label: 'Suficiente' },
+        { min: 0, color: 'red', label: 'Insuficiente' },
+    ]
 };

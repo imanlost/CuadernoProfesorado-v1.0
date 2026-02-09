@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import type { ClassData, SpecificCompetence, KeyCompetence, EvaluationCriterion, AcademicConfiguration, Student } from '../types';
-import { calculateStudentCompetenceGrades, calculateStudentCriterionGrades } from '../services/gradeCalculations';
+import { calculateStudentCompetenceGrades, calculateStudentCriterionGrades, getGradeColorClass } from '../services/gradeCalculations';
 import DrilldownModal, { DrilldownData } from './DrilldownModal';
 
 interface SpecificCompetenceAchievementProps {
@@ -11,19 +11,6 @@ interface SpecificCompetenceAchievementProps {
   criteria: EvaluationCriterion[];
   academicConfiguration: AcademicConfiguration;
 }
-
-const getGradeStyleClasses = (grade: number | null) => {
-    if (grade === null || grade === undefined) {
-        return { bg: 'bg-transparent', text: 'text-slate-500' };
-    }
-    if (grade < 5) {
-        return { bg: 'bg-red-100', text: 'text-red-800' };
-    }
-    if (grade < 7) {
-        return { bg: 'bg-yellow-100', text: 'text-yellow-800' };
-    }
-    return { bg: 'bg-green-100', text: 'text-green-800' };
-};
 
 const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps> = ({ classData, competences, keyCompetences, criteria, academicConfiguration }) => {
     const [selectedPeriodId, setSelectedPeriodId] = useState<string>('all');
@@ -124,9 +111,9 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
                                 </td>
                                 {competences.map(competence => {
                                     const grade = studentCompetenceGrades.get(student.id)?.get(competence.id) ?? null;
-                                    const style = getGradeStyleClasses(grade);
+                                    const styleClass = getGradeColorClass(grade, academicConfiguration.gradeScale);
                                     return (
-                                        <td key={competence.id} className={`px-3 py-2 text-center font-bold text-base cursor-pointer ${style.bg} ${style.text}`} onClick={() => handleCellClick(student, competence)}>
+                                        <td key={competence.id} className={`px-3 py-2 text-center font-bold text-base cursor-pointer ${styleClass}`} onClick={() => handleCellClick(student, competence)}>
                                             {grade !== null ? grade.toFixed(2) : '-'}
                                         </td>
                                     );
@@ -139,9 +126,9 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
                             <td className="px-6 py-3 font-bold text-slate-800 sticky left-0 bg-slate-100 z-10 w-52">Media de la Clase</td>
                             {competences.map(competence => {
                                 const avgGrade = classAverageGrades.get(competence.id) ?? null;
-                                const style = getGradeStyleClasses(avgGrade);
+                                const styleClass = getGradeColorClass(avgGrade, academicConfiguration.gradeScale);
                                 return (
-                                    <td key={competence.id} className={`px-3 py-2 text-center font-bold text-base ${style.bg} ${style.text}`}>
+                                    <td key={competence.id} className={`px-3 py-2 text-center font-bold text-base ${styleClass}`}>
                                         {avgGrade !== null ? avgGrade.toFixed(2) : '-'}
                                     </td>
                                 );
@@ -150,7 +137,12 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
                     </tfoot>
                 </table>
             </div>
-            <DrilldownModal isOpen={!!drilldownData} onClose={() => setDrilldownData(null)} data={drilldownData} />
+            <DrilldownModal 
+                isOpen={!!drilldownData} 
+                onClose={() => setDrilldownData(null)} 
+                data={drilldownData} 
+                gradeScale={academicConfiguration.gradeScale}
+            />
         </div>
     );
 };
