@@ -17,13 +17,13 @@ Este proyecto es una **aplicación local** diseñada para que el docente tenga e
 ![Mes](screenshots/calendario-mes.png) ![Semana](screenshots/calendario-sem.png) ![Día](screenshots/calendario-dia.png)
 
 ### 📓 **Cuaderno**
-![Calificaciones](screenshots/cuaderno-calif.png) ![Criterios Evaluación](screenshots/cuaderno-inf-criterios-evaluacion.png) ![Competencias Clave](screenshots/cuaderno-inf-complev.png)
+![Calificaciones](screenshots/cuaderno-calif.png) ![Criterios Evaluación](screenshots/cuader-inf-crit.png) ![Competencias Clave](screenshots/cuaderno-inf-compclave.png)
 
 ### 📄 **Diario de clase**
 ![Diario](screenshots/diario-clase.png)
 
 ### ⚙️ **Ajustes**
-![Configuración Curso](screenshots/ajustes-config.png) ![Cursos Materias](screenshots/ajustes-cursos-materias.png) ![Clases Alumnado](screenshots/ajustes-clases-alumn.png) ![Horario Semanal](screenshots/ajustes-horario.png) ![Currículo](screenshots/ajustes-curric.png) ![Planificación UD](screenshots/ajustes-planifUD.png) ![Instrumentos Evaluación](screenshots/ajustes-instrumento.png) ![Copia Seguridad](screenshots/ajustes-copia-seg.png)
+![Configuración Curso](screenshots/ajustes-confcurso.png) ![Cursos Materias](screenshots/ajustes-curso-materia.png) ![Clases Alumnado](screenshots/ajustes-clases-alumn.png) ![Horario Semanal](screenshots/ajustes-horario.png) ![Currículo](screenshots/ajustes-curric.png) ![Planificación UD](screenshots/ajustes-planifUD.png) ![Planificación UD](screenshots/ajustes-planifUD2.png) ![Instrumentos Evaluación](screenshots/ajustes-instrumentos.png) ![Copia Seguridad](screenshots/ajustes-backup.png)
 
 **→ [Ver todas las capturas (20+ imágenes)](screenshots/)**
 
