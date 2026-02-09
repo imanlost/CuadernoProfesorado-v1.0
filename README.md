@@ -1,3 +1,32 @@
+# Cuaderno del Profesorado
+
+**¡Bienvenido a su cuaderno digital personal!**
+
+Este proyecto es una **aplicación local** diseñada para que el docente tenga el **control absoluto** sobre su gestión académica. 
+
+**¿Por qué es diferente?** A diferencia de las soluciones en la nube, aquí **usted es el propietario real de sus datos**. 
+
+**La base de datos se almacena exclusivamente en su ordenador.** Esto garantiza la privacidad de la información del alumnado y el cumplimiento de la normativa de protección de datos, ya que **nada sale de su equipo**.
+
+> **💾 Nota sobre la persistencia**  
+> Los datos se guardan en el almacenamiento local de su equipo vinculado al navegador. Siempre que acceda desde el **mismo ordenador y con el mismo navegador**, sus datos estarán ahí. No es necesario realizar descargas de seguridad diarias para continuar su trabajo, aunque se recomienda hacer **copias de la carpeta del proyecto periódicamente**.
+
+## 📱 Vista previa de la aplicación
+
+### 📅 **Calendario**
+![Mes](screenshots/calendario-mes.png) ![Semana](screenshots/calendario-sem.png) ![Día](screenshots/calendario-dia.png)
+
+### 📓 **Cuaderno**
+![Calificaciones](screenshots/cuaderno-calif.png) ![Criterios Evaluación](screenshots/cuaderno-inf-criterios-evaluacion.png) ![Competencias Clave](screenshots/cuaderno-inf-complev.png)
+
+### 📄 **Diario de clase**
+![Diario](screenshots/diario-clase.png)
+
+### ⚙️ **Ajustes**
+![Configuración Curso](screenshots/ajustes-config.png) ![Cursos Materias](screenshots/ajustes-cursos-materias.png) ![Clases Alumnado](screenshots/ajustes-clases-alumn.png) ![Horario Semanal](screenshots/ajustes-horario.png) ![Currículo](screenshots/ajustes-curric.png) ![Planificación UD](screenshots/ajustes-planifUD.png) ![Instrumentos Evaluación](screenshots/ajustes-instrumento.png) ![Copia Seguridad](screenshots/ajustes-copia-seg.png)
+
+**→ [Ver todas las capturas (20+ imágenes)](screenshots/)**
+
 # 🚀 Instalación Paso a Paso
 
 ## 📥 1. Descarga del proyecto (TODOS los sistemas)
