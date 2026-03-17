@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import type { ProgrammingUnit, Course, SessionDetail, EvaluationCriterion, BasicKnowledge, ClassData, AcademicConfiguration } from '../types';
-import { PencilIcon, TrashIcon, PlusIcon, ArrowUpIcon, ArrowDownIcon, ArrowUpTrayIcon } from './Icons';
+import { PencilIcon, TrashIcon, PlusIcon, ArrowUpIcon, ArrowDownIcon, ArrowUpTrayIcon, ArrowDownTrayIcon } from './Icons';
 import Modal from './Modal';
 
 interface ProgrammingManagerProps {
@@ -137,6 +137,10 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
     }, [selectedCourseId, classes, academicConfiguration, units]);
 
 
+    const handleToggleTaught = (unitId: string) => {
+        setUnits(prev => prev.map(u => u.id === unitId ? { ...u, isTaught: !u.isTaught } : u));
+    };
+
     const handleSave = (unit: ProgrammingUnit) => {
         if (unitEditorState?.mode === 'edit') {
             setUnits(prev => prev.map(u => u.id === unit.id ? unit : u));
@@ -149,6 +153,41 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
             setUnits(prev => [...prev, newUnit]);
         }
         setUnitEditorState(null);
+    };
+
+    const handleExportCSV = () => {
+        if (!selectedCourse || filteredUnits.length === 0) return;
+
+        const headers = ["Nombre", "Sesiones", "FechaInicio", "Criterios", "Saberes", "DetalleSesiones"];
+        
+        // Resolve codes for criteria and knowledge
+        const criteriaMap = new Map<string, string>(filteredCriteria.map(c => [c.id, c.code]));
+        const knowledgeMap = new Map<string, string>(filteredBasicKnowledge.map(k => [k.id, k.code]));
+
+        const rows = filteredUnits.map(unit => {
+            const criteriaCodes = unit.linkedCriteriaIds.map(id => criteriaMap.get(id)).filter(Boolean).join(', ');
+            const knowledgeCodes = unit.linkedBasicKnowledgeIds.map(id => knowledgeMap.get(id)).filter(Boolean).join(', ');
+            const sessionDetails = (unit.sessionDetails || []).map(d => d.description).join('|');
+
+            return [
+                `"${unit.name.replace(/"/g, '""')}"`,
+                unit.sessions,
+                unit.startDate || "",
+                `"${criteriaCodes}"`,
+                `"${knowledgeCodes}"`,
+                `"${sessionDetails.replace(/"/g, '""')}"`
+            ].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `planificacion_${selectedCourse.level}_${selectedCourse.subject}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
     
     const handleDelete = (unitId: string) => {
@@ -297,11 +336,20 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
                             <h2 className="text-lg font-bold text-slate-800">Unidades para {selectedCourse.level} - {selectedCourse.subject}</h2>
                             <div className="flex gap-2">
                                 <button 
+                                    onClick={handleExportCSV}
+                                    disabled={filteredUnits.length === 0}
+                                    className="inline-flex items-center justify-center py-2 px-3 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Exportar planificación actual a CSV"
+                                >
+                                    <ArrowDownTrayIcon className="w-4 h-4 mr-1"/>
+                                    Exportar
+                                </button>
+                                <button 
                                     onClick={() => setShowImportHelp(!showImportHelp)}
                                     className="inline-flex items-center justify-center py-2 px-3 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50"
                                 >
                                     <ArrowUpTrayIcon className="w-4 h-4 mr-1"/>
-                                    Importar CSV
+                                    Importar
                                 </button>
                                 <button onClick={() => setUnitEditorState({ mode: 'create'})} disabled={!!unitEditorState} className="inline-flex items-center justify-center py-2 px-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed">
                                     <PlusIcon className="w-4 h-4 mr-1"/>
@@ -351,6 +399,7 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
                                                 linkedBasicKnowledge={linkedBasicKnowledgeData} 
                                                 onEdit={() => setUnitEditorState({ mode: 'edit', unit })} 
                                                 onDelete={() => handleDelete(unit.id)} 
+                                                onToggleTaught={() => handleToggleTaught(unit.id)}
                                             />
                                         </div>
                                     );
@@ -393,9 +442,10 @@ interface UnitViewerProps {
     linkedBasicKnowledge: BasicKnowledge[];
     onEdit: () => void;
     onDelete: () => void;
+    onToggleTaught: () => void;
 }
 
-const UnitViewer: React.FC<UnitViewerProps> = ({ unit, dateRange, linkedCriteria, linkedBasicKnowledge, onEdit, onDelete }) => {
+const UnitViewer: React.FC<UnitViewerProps> = ({ unit, dateRange, linkedCriteria, linkedBasicKnowledge, onEdit, onDelete, onToggleTaught }) => {
     const formatDateRange = () => {
         if (!dateRange || !dateRange.start || !dateRange.end) return "Fechas no calculadas";
         const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
@@ -406,9 +456,21 @@ const UnitViewer: React.FC<UnitViewerProps> = ({ unit, dateRange, linkedCriteria
 
     return (
         <div className="flex items-start justify-between">
-            <div>
-                <h3 className="font-bold text-slate-800">{unit.name} <span className="font-normal text-sm text-slate-500">({unit.sessions} sesiones)</span></h3>
-                <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-start gap-3">
+                <div className="mt-1">
+                    <input 
+                        type="checkbox" 
+                        checked={!!unit.isTaught} 
+                        onChange={onToggleTaught}
+                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        title={unit.isTaught ? "Marcar como no impartida" : "Marcar como impartida"}
+                    />
+                </div>
+                <div>
+                    <h3 className={`font-bold transition-colors ${unit.isTaught ? 'text-slate-400' : 'text-slate-800'}`}>
+                        {unit.name} <span className="font-normal text-sm text-slate-500">({unit.sessions} sesiones)</span>
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
                     <p className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full inline-block">{formatDateRange()}</p>
                     {unit.startDate && <p className="text-xs text-slate-500 italic">Inicio fijado: {unit.startDate}</p>}
                 </div>
@@ -429,7 +491,8 @@ const UnitViewer: React.FC<UnitViewerProps> = ({ unit, dateRange, linkedCriteria
                     </div>
                 </div>
             </div>
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button onClick={onEdit} className="p-2 hover:bg-slate-200 rounded-full"><PencilIcon className="w-4 h-4 text-slate-600" /></button>
                 <button onClick={onDelete} className="p-2 hover:bg-red-100 rounded-full"><TrashIcon className="w-4 h-4 text-red-500" /></button>
             </div>

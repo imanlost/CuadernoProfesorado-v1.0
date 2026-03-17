@@ -9,7 +9,21 @@ import SpecificCompetenceAchievement from './components/SpecificCompetenceAchiev
 import KeyCompetenceAchievement from './components/KeyCompetenceAchievement';
 import DescriptorAchievement from './components/DescriptorAchievement';
 import ClassJournal from './components/ClassJournal';
-import { BookOpenIcon, CalendarDaysIcon, Cog8ToothIcon, ChevronDownIcon } from './components/Icons';
+import GroupStatistics from './components/GroupStatistics';
+import { 
+  PlusIcon, 
+  UserGroupIcon, 
+  AcademicCapIcon, 
+  Cog8ToothIcon, 
+  ArrowDownTrayIcon, 
+  ArrowUpTrayIcon, 
+  BookOpenIcon, 
+  ClipboardDocumentIcon, 
+  CalendarDaysIcon, 
+  ChevronDownIcon,
+  ChartBarIcon,
+  ComputerDesktopIcon
+} from './components/Icons';
 import SettingsModal from './components/SettingsModal';
 import ExportModal from './components/ExportModal';
 import CalendarView from './components/CalendarView';
@@ -30,7 +44,11 @@ interface AppState {
 }
 
 // TypeScript declaration for the sql.js library loaded from CDN
-declare const initSqlJs: (config?: any) => Promise<any>;
+declare global {
+    interface Window {
+        initSqlJs: (config?: any) => Promise<any>;
+    }
+}
 
 // Helper functions for IndexedDB
 const DB_NAME = 'gradebook-sqlite-db';
@@ -76,6 +94,9 @@ function useDatabase() {
     const [appState, setAppState] = useState<AppState | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // File System Access API Handle
+    const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null);
 
     const loadDataFromDb = (db: any) => {
         try {
@@ -97,7 +118,8 @@ function useDatabase() {
     useEffect(() => {
         const initialize = async () => {
             try {
-                const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+                // FIX: Use window.initSqlJs directly as it is declared in global interface
+                const SQL = await window.initSqlJs({ locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
                 const savedDb = await indexedDB.get();
                 let db;
                 if (savedDb) {
@@ -135,8 +157,7 @@ function useDatabase() {
         initialize();
     }, []);
     
-    // FIX: Implemented debounced autosaving to prevent performance issues and data loss.
-    // The app state is now persisted to IndexedDB 1.5 seconds after the last change.
+    // Autosave logic (IndexedDB + File System Access API)
     useEffect(() => {
         // Do not save while loading or if state is not yet initialized.
         if (loading || !appState) {
@@ -150,7 +171,17 @@ function useDatabase() {
                     const db = dbRef.current;
                     db.exec("INSERT OR REPLACE INTO app_data (key, data) VALUES ('main', ?)", [JSON.stringify(appState)]);
                     const binaryDb = db.export();
+                    
+                    // 1. Save to browser storage (IndexedDB) as fallback/cache
                     await indexedDB.set(binaryDb);
+
+                    // 2. If a local file handle exists, write to disk!
+                    if (fileHandle) {
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(binaryDb);
+                        await writable.close();
+                        console.log("Saved to local file system successfully.");
+                    }
                 } catch (e) {
                     console.error("Failed to autosave database:", e);
                     setError("Error al guardar los datos automáticamente.");
@@ -162,7 +193,7 @@ function useDatabase() {
         return () => {
             clearTimeout(handler);
         };
-    }, [appState, loading]); // This effect triggers on every state change.
+    }, [appState, loading, fileHandle]); // Re-run when fileHandle changes too
 
     // Renamed from updateStateAndPersist. This now only updates React's state.
     const updateState = useCallback((updater: (prevState: AppState) => AppState) => {
@@ -175,14 +206,15 @@ function useDatabase() {
     const importDatabase = useCallback(async (buffer: ArrayBuffer) => {
         setLoading(true);
         try {
-            const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+            // FIX: Use window.initSqlJs directly as it is declared in global interface
+            const SQL = await window.initSqlJs({ locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
             const db = new SQL.Database(new Uint8Array(buffer));
             dbRef.current = db;
             const data = loadDataFromDb(db);
             if (data) {
                 setAppState(data);
-                const binaryDb = db.export(); // Get binary data from the new DB
-                await indexedDB.set(binaryDb); // Save imported DB to IndexedDB
+                const binaryDb = db.export(); 
+                await indexedDB.set(binaryDb); 
                 alert("Base de datos importada con éxito.");
             } else {
                 throw new Error("El archivo de base de datos no es válido o está vacío.");
@@ -190,7 +222,6 @@ function useDatabase() {
         } catch (e) {
             console.error(e);
             alert(`Error al importar la base de datos: ${e instanceof Error ? e.message : String(e)}`);
-            // Optionally, reload the old state if import fails
         } finally {
             setLoading(false);
         }
@@ -203,6 +234,82 @@ function useDatabase() {
         return null;
     }, []);
 
+    // File System Access API Handlers
+    const saveToLocalFile = async () => {
+        if (!('showSaveFilePicker' in window)) {
+            alert("Tu navegador no soporta guardar archivos directamente. Usa Chrome, Edge u Opera.");
+            return;
+        }
+        try {
+            const handle = await (window as any).showSaveFilePicker({
+                suggestedName: 'cuaderno-docente.db',
+                types: [{
+                    description: 'SQLite Database',
+                    accept: { 'application/x-sqlite3': ['.db', '.sqlite'] },
+                }],
+            });
+            setFileHandle(handle);
+            // Trigger an immediate save to this new handle
+            const db = dbRef.current;
+            if (db) {
+                const binaryDb = db.export();
+                const writable = await handle.createWritable();
+                await writable.write(binaryDb);
+                await writable.close();
+                alert(`Conectado exitosamente. Los cambios se guardarán automáticamente en "${handle.name}".`);
+            }
+        } catch (err: any) {
+            if (err.name !== 'AbortError') {
+                console.error(err);
+                alert("Error al guardar el archivo.");
+            }
+        }
+    };
+
+    const openLocalFile = async () => {
+        if (!('showOpenFilePicker' in window)) {
+             alert("Tu navegador no soporta abrir archivos locales directamente. Usa Chrome, Edge u Opera.");
+             return;
+        }
+        try {
+            const [handle] = await (window as any).showOpenFilePicker({
+                types: [{
+                    description: 'SQLite Database',
+                    accept: { 'application/x-sqlite3': ['.db', '.sqlite'] },
+                }],
+                multiple: false
+            });
+            
+            const file = await handle.getFile();
+            const buffer = await file.arrayBuffer();
+            
+            // Standard Import Logic
+            setLoading(true);
+            // FIX: Use window.initSqlJs directly as it is declared in global interface
+            const SQL = await window.initSqlJs({ locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+            const db = new SQL.Database(new Uint8Array(buffer));
+            dbRef.current = db;
+            const data = loadDataFromDb(db);
+            
+            if (data) {
+                setAppState(data);
+                const binaryDb = db.export(); 
+                await indexedDB.set(binaryDb);
+                setFileHandle(handle); // Set handle for future autosaves
+                alert(`Archivo "${handle.name}" cargado y vinculado. Los cambios se sincronizarán automáticamente.`);
+            } else {
+                throw new Error("El archivo no es una base de datos válida.");
+            }
+        } catch (err: any) {
+             if (err.name !== 'AbortError') {
+                console.error(err);
+                alert("Error al abrir el archivo.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const resetDatabase = useCallback(async () => {
         const confirmed = window.confirm(
             "¡ADVERTENCIA MÁXIMA! Esta acción es irreversible y eliminará ABSOLUTAMENTE TODOS los datos de la aplicación: clases, alumnos, calificaciones, currículo, planificaciones, TODO. La aplicación quedará completamente en blanco, lista para que introduzcas tus propios datos desde cero. ¿Estás COMPLETAMENTE seguro de que quieres borrar todo?"
@@ -214,8 +321,6 @@ function useDatabase() {
 
         setLoading(true);
         try {
-            // FIX: The blankState was missing required properties for AcademicConfiguration and AppState.
-            // Added empty arrays for holidays, evaluationPeriods, and evaluationTools to satisfy the types.
             const blankState: AppState = {
                 classes: [],
                 keyCompetences: [],
@@ -245,6 +350,7 @@ function useDatabase() {
             const binaryDb = dbRef.current.export();
             await indexedDB.set(binaryDb);
             setAppState(blankState);
+            setFileHandle(null); // Disconnect local file on reset
             alert("Todos los datos han sido borrados. La aplicación se recargará.");
             window.location.reload();
         } catch (e) {
@@ -255,13 +361,13 @@ function useDatabase() {
         }
     }, []);
 
-    return { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase };
+    return { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, fileHandle };
 }
 
-type View = 'calendar' | 'gradebook' | 'journal' | 'criteria' | 'competences' | 'key-competences' | 'descriptors';
+type View = 'calendar' | 'gradebook' | 'journal' | 'criteria' | 'competences' | 'key-competences' | 'descriptors' | 'statistics';
 
 const App = () => {
-    const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase } = useDatabase();
+    const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, fileHandle } = useDatabase();
     
     // --- UI State ---
     const [activeClassId, setActiveClassId] = useState<string>('');
@@ -473,7 +579,16 @@ const App = () => {
                     keyCompetences={keyCompetences} 
                     onSaveJournalEntry={handleUpdateJournalEntry}
                 />;
-            default:
+            case 'statistics':
+        return activeClass ? (
+          <GroupStatistics 
+            classData={activeClass}
+            programmingUnits={programmingUnits}
+            academicConfiguration={academicConfiguration}
+            allCourses={courses}
+          />
+        ) : null;
+      default:
                 return null;
         }
     };
@@ -505,6 +620,7 @@ const App = () => {
                                 <div className="absolute top-full mt-2 w-60 bg-white rounded-lg shadow-xl border z-50 p-2">
                                     <button onClick={() => { setActiveView('gradebook'); setNotebookOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-md">Calificaciones</button>
                                     <button onClick={() => { setActiveView('criteria'); setNotebookOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-md">Informes</button>
+                                    <button onClick={() => { setActiveView('statistics'); setNotebookOpen(false); }} className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 rounded-md">Estadísticas</button>
                                 </div>
                             )}
                         </div>
@@ -518,6 +634,14 @@ const App = () => {
                     </nav>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Visual Indicator for Sync */}
+                    {fileHandle && (
+                        <div className="hidden md:flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-100 rounded-md text-xs text-indigo-700 font-medium" title={`Sincronizado con: ${fileHandle.name}`}>
+                            <ComputerDesktopIcon className="w-4 h-4" />
+                            <span className="truncate max-w-[100px]">{fileHandle.name}</span>
+                        </div>
+                    )}
+
                     {/* Hide global class selector when in Gradebook view to avoid redundancy with new tabs, also hide in Journal view */}
                     {activeView !== 'calendar' && activeView !== 'gradebook' && activeView !== 'journal' && academicClasses.length > 0 && (
                         <select
@@ -568,6 +692,9 @@ const App = () => {
                 importDatabase={importDatabase}
                 exportDatabase={exportDatabase}
                 resetDatabase={resetDatabase}
+                onSaveToLocalFile={saveToLocalFile}
+                onOpenLocalFile={openLocalFile}
+                localFileName={fileHandle?.name || null}
             />
 
             <ExportModal

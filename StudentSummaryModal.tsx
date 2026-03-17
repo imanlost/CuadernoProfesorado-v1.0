@@ -9,10 +9,9 @@ import {
     calculateAssignmentScoresForStudent,
     calculateStudentKeyCompetenceGrades,
     calculateStudentCompetenceGrades,
-    calculateStudentCriterionGrades,
-    getGradeColorClass
+    calculateStudentCriterionGrades
 } from '../services/gradeCalculations';
-import { ChevronDownIcon, ChevronRightIcon, ChevronLeftIcon, ClipboardDocumentIcon } from './Icons';
+import { ChevronDownIcon, ChevronRightIcon, ClipboardDocumentIcon } from './Icons';
 
 interface StudentSummaryModalProps {
     isOpen: boolean;
@@ -23,41 +22,23 @@ interface StudentSummaryModalProps {
     criteria: EvaluationCriterion[];
     specificCompetences: SpecificCompetence[];
     keyCompetences: KeyCompetence[];
-    onStudentChange?: (student: Student) => void;
 }
 
+const getGradeColorClass = (grade: number | null) => {
+    if (grade === null || grade === undefined) return 'text-slate-400 bg-slate-100';
+    if (grade < 5) return 'text-red-700 bg-red-100';
+    if (grade < 7) return 'text-yellow-700 bg-yellow-100';
+    return 'text-green-700 bg-green-100';
+};
+
 const StudentSummaryModal: React.FC<StudentSummaryModalProps> = ({ 
-    isOpen, onClose, student, classData, academicConfiguration, criteria, specificCompetences, keyCompetences, onStudentChange
+    isOpen, onClose, student, classData, academicConfiguration, criteria, specificCompetences, keyCompetences 
 }) => {
     const [activeTab, setActiveTab] = useState<'evolution' | 'competences' | 'criteria'>('evolution');
 
     const finalGradeData = useMemo(() => 
         calculateOverallFinalGradeForStudent(student.id, classData, academicConfiguration),
     [student.id, classData, academicConfiguration]);
-
-    const currentIndex = classData.students.findIndex(s => s.id === student.id);
-    const hasPrevStudent = currentIndex > 0;
-    const hasNextStudent = currentIndex < classData.students.length - 1;
-
-    const handlePrevStudent = () => {
-        if (hasPrevStudent && onStudentChange) {
-            onStudentChange(classData.students[currentIndex - 1]);
-        }
-    };
-
-    const handleNextStudent = () => {
-        if (hasNextStudent && onStudentChange) {
-            onStudentChange(classData.students[currentIndex + 1]);
-        }
-    };
-
-    const handleStudentSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedId = e.target.value;
-        const selectedStudent = classData.students.find(s => s.id === selectedId);
-        if (selectedStudent && onStudentChange) {
-            onStudentChange(selectedStudent);
-        }
-    };
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -70,10 +51,9 @@ const StudentSummaryModal: React.FC<StudentSummaryModalProps> = ({
                     criteria={criteria} 
                     specificCompetences={specificCompetences} 
                     keyCompetences={keyCompetences} 
-                    academicConfiguration={academicConfiguration}
                 />;
             case 'criteria':
-                return <CriteriaTab student={student} classData={classData} criteria={criteria} specificCompetences={specificCompetences} academicConfiguration={academicConfiguration} />;
+                return <CriteriaTab student={student} classData={classData} criteria={criteria} specificCompetences={specificCompetences} />;
             default:
                 return null;
         }
@@ -84,45 +64,16 @@ const StudentSummaryModal: React.FC<StudentSummaryModalProps> = ({
             <div className="flex flex-col h-full max-h-[80vh]">
                 {/* Header */}
                 <div className="flex justify-between items-start mb-6 pb-4 border-b">
-                    <div className="flex-1 mr-4">
+                    <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
-                                <button 
-                                    onClick={handlePrevStudent}
-                                    disabled={!hasPrevStudent}
-                                    className="p-1.5 rounded-md text-slate-600 hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
-                                    title="Alumno anterior"
-                                >
-                                    <ChevronLeftIcon className="w-5 h-5" />
-                                </button>
-                                
-                                <select 
-                                    value={student.id}
-                                    onChange={handleStudentSelect}
-                                    className="bg-transparent border-none text-xl font-bold text-slate-800 focus:ring-0 cursor-pointer py-1 pr-8 appearance-none hover:bg-white hover:shadow-sm rounded-md transition-all"
-                                    style={{ backgroundImage: 'none' }}
-                                >
-                                    {classData.students.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
-
-                                <button 
-                                    onClick={handleNextStudent}
-                                    disabled={!hasNextStudent}
-                                    className="p-1.5 rounded-md text-slate-600 hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
-                                    title="Siguiente alumno"
-                                >
-                                    <ChevronRightIcon className="w-5 h-5" />
-                                </button>
-                            </div>
+                            <h2 className="text-2xl font-bold text-slate-800">{student.name}</h2>
                             <AcneaeTag tags={student.acneae} />
                         </div>
-                        <div className="flex gap-2 text-sm text-slate-500 ml-1">
+                        <div className="flex gap-2 text-sm text-slate-500">
                             {student.acneae.length > 0 && <span>Medidas: {student.acneae.join(', ')}</span>}
                         </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
+                    <div className="text-right">
                         <p className="text-sm text-slate-500 uppercase tracking-wide font-semibold">Nota Final Curso</p>
                         <div className={`text-3xl font-extrabold px-3 py-1 rounded-lg inline-block mt-1 ${finalGradeData.styleClasses}`}>
                             {finalGradeData.grade}
@@ -171,7 +122,7 @@ const EvolutionTab: React.FC<EvolutionTabProps> = ({ student, classData, academi
     return (
         <div className="space-y-4">
             {evaluationPeriods.map(period => (
-                <PeriodCard key={period.id} period={period} student={student} classData={classData} academicConfiguration={academicConfiguration} />
+                <PeriodCard key={period.id} period={period} student={student} classData={classData} />
             ))}
         </div>
     );
@@ -181,15 +132,14 @@ interface PeriodCardProps {
     period: EvaluationPeriod;
     student: Student;
     classData: ClassData;
-    academicConfiguration: AcademicConfiguration;
 }
 
-const PeriodCard: React.FC<PeriodCardProps> = ({ period, student, classData, academicConfiguration }) => {
+const PeriodCard: React.FC<PeriodCardProps> = ({ period, student, classData }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     
     const periodGrade = useMemo(() => 
-        calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id, academicConfiguration.gradeScale),
-    [student.id, classData, period.id, academicConfiguration.gradeScale]);
+        calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id),
+    [student.id, classData, period.id]);
 
     const categoriesInPeriod = useMemo(() => 
         classData.categories.filter(c => c.evaluationPeriodId === period.id),
@@ -250,7 +200,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({ period, student, classData, aca
                                                                 {assignment.date ? new Date(assignment.date).toLocaleDateString() : 'Sin fecha'}
                                                             </p>
                                                         </div>
-                                                        <span className={`text-sm font-bold px-2 py-0.5 rounded ${getGradeColorClass(score ?? null, academicConfiguration.gradeScale)}`}>
+                                                        <span className={`text-sm font-bold px-2 py-0.5 rounded ${getGradeColorClass(score ?? null)}`}>
                                                             {score?.toFixed(2) ?? '-'}
                                                         </span>
                                                     </div>
@@ -276,10 +226,9 @@ interface CompetencesTabProps {
     criteria: EvaluationCriterion[];
     specificCompetences: SpecificCompetence[];
     keyCompetences: KeyCompetence[];
-    academicConfiguration: AcademicConfiguration;
 }
 
-const CompetencesTab: React.FC<CompetencesTabProps> = ({ student, classData, criteria, specificCompetences, keyCompetences, academicConfiguration }) => {
+const CompetencesTab: React.FC<CompetencesTabProps> = ({ student, classData, criteria, specificCompetences, keyCompetences }) => {
     
     const kcGrades = useMemo(() => 
         calculateStudentKeyCompetenceGrades(student.id, classData, criteria, specificCompetences, keyCompetences),
@@ -300,12 +249,11 @@ const CompetencesTab: React.FC<CompetencesTabProps> = ({ student, classData, cri
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {keyCompetences.map(kc => {
                         const grade = kcGrades.get(kc.id);
-                        const colorClass = getGradeColorClass(grade ?? null, academicConfiguration.gradeScale);
                         return (
                             <div key={kc.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="font-bold text-slate-700 text-lg">{kc.code}</span>
-                                    <span className={`font-bold text-lg px-2 py-0.5 rounded ${colorClass}`}>
+                                    <span className={`font-bold text-lg px-2 py-0.5 rounded ${getGradeColorClass(grade ?? null)}`}>
                                         {grade?.toFixed(2) ?? '-'}
                                     </span>
                                 </div>
@@ -325,7 +273,6 @@ const CompetencesTab: React.FC<CompetencesTabProps> = ({ student, classData, cri
                 <div className="space-y-3">
                     {specificCompetences.map(sc => {
                         const grade = scGrades.get(sc.id);
-                        const colorClass = getGradeColorClass(grade ?? null, academicConfiguration.gradeScale);
                         return (
                             <div key={sc.id} className="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between gap-4">
                                 <div className="flex-1">
@@ -335,7 +282,7 @@ const CompetencesTab: React.FC<CompetencesTabProps> = ({ student, classData, cri
                                     <p className="text-sm text-slate-600 mt-1">{sc.description}</p>
                                 </div>
                                 <div className="flex-shrink-0 w-16 text-right">
-                                    <span className={`font-bold text-lg px-2 py-1 rounded ${colorClass}`}>
+                                    <span className={`font-bold text-lg px-2 py-1 rounded ${getGradeColorClass(grade ?? null)}`}>
                                         {grade?.toFixed(2) ?? '-'}
                                     </span>
                                 </div>
@@ -355,10 +302,9 @@ interface CriteriaTabProps {
     classData: ClassData;
     criteria: EvaluationCriterion[];
     specificCompetences: SpecificCompetence[];
-    academicConfiguration: AcademicConfiguration;
 }
 
-const CriteriaTab: React.FC<CriteriaTabProps> = ({ student, classData, criteria, specificCompetences, academicConfiguration }) => {
+const CriteriaTab: React.FC<CriteriaTabProps> = ({ student, classData, criteria, specificCompetences }) => {
     const grades = useMemo(() => 
         calculateStudentCriterionGrades(student.id, classData, criteria),
     [student.id, classData, criteria]);
@@ -387,7 +333,6 @@ const CriteriaTab: React.FC<CriteriaTabProps> = ({ student, classData, criteria,
                         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {scCriteria.map(criterion => {
                                 const grade = grades.get(criterion.id);
-                                const colorClass = getGradeColorClass(grade ?? null, academicConfiguration.gradeScale);
                                 return (
                                     <div key={criterion.id} className="flex items-start justify-between p-2 rounded border border-slate-100 hover:border-slate-300 transition-colors">
                                         <div className="flex-1 pr-2">
@@ -396,7 +341,7 @@ const CriteriaTab: React.FC<CriteriaTabProps> = ({ student, classData, criteria,
                                                 {criterion.description}
                                             </p>
                                         </div>
-                                        <span className={`font-bold text-sm px-2 py-1 rounded-full flex-shrink-0 ${colorClass}`}>
+                                        <span className={`font-bold text-sm px-2 py-1 rounded-full flex-shrink-0 ${getGradeColorClass(grade ?? null)}`}>
                                             {grade?.toFixed(1) ?? '-'}
                                         </span>
                                     </div>

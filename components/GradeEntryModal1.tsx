@@ -104,15 +104,6 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
       setToolResults(prev => ({ ...prev, [itemId]: value }));
   };
 
-  const handleCheckAll = () => {
-    if (!evaluationTool || evaluationTool.type !== 'checklist') return;
-    const newResults: Record<string, boolean> = { ...toolResults };
-    evaluationTool.items.forEach(item => {
-      newResults[item.id] = true;
-    });
-    setToolResults(newResults);
-  };
-
   const handleSaveInternal = (e: React.FormEvent, next: boolean) => {
     e.preventDefault();
     if (assignment.evaluationMethod === 'direct_grade') {
@@ -235,17 +226,6 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
 
     return (
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-            {evaluationTool.type === 'checklist' && (
-                <div className="flex justify-end mb-2">
-                    <button
-                        type="button"
-                        onClick={handleCheckAll}
-                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-md border border-indigo-200 transition-colors"
-                    >
-                        Marcar todos como conseguidos
-                    </button>
-                </div>
-            )}
             {evaluationTool.items.map(item => (
                 <div key={item.id} className="p-3 border rounded-lg bg-slate-50/50">
                     <p className="font-medium text-slate-800 mb-2">{item.description}</p>

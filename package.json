@@ -1,17 +1,19 @@
 {
-  "name": "cuadernoprofesorado-v1.0",
+  "name": "cuadernoprofesorado-v2",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/genai": "^1.26.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "@google/genai": "^1.26.0"
+    "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

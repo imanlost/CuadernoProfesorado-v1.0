@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { Course, KeyCompetence, OperationalDescriptor, SpecificCompetence, EvaluationCriterion, BasicKnowledge } from '../types';
-import { PencilIcon, TrashIcon, PlusIcon } from './Icons';
+import { PencilIcon, TrashIcon, PlusIcon, ArrowDownTrayIcon } from './Icons';
 
 
 const Accordion: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -22,18 +22,40 @@ const CurriculumManager = (props: any) => {
     const handleUpdate = (type: 'ec' | 'sc' | 'kc' | 'sb', item: any) => {
         switch (type) {
             case 'ec':
-                setEvaluationCriteria((prev: any) => prev.map((i: any) => i.id === item.id ? item : i));
+                setEvaluationCriteria((prev: any) => {
+                    const exists = prev.some((i: any) => i.id === item.id);
+                    if (exists) return prev.map((i: any) => i.id === item.id ? item : i);
+                    return [...prev, item];
+                });
                 break;
             case 'sc':
-                setSpecificCompetences((prev: any) => prev.map((i: any) => i.id === item.id ? item : i));
+                setSpecificCompetences((prev: any) => {
+                    const exists = prev.some((i: any) => i.id === item.id);
+                    if (exists) return prev.map((i: any) => i.id === item.id ? item : i);
+                    return [...prev, item];
+                });
                 break;
             case 'kc':
                  setKeyCompetences((prev: any) => prev.map((i: any) => i.id === item.id ? item : i));
                 break;
             case 'sb':
-                setBasicKnowledge((prev: any) => prev.map((i: any) => i.id === item.id ? item : i));
+                setBasicKnowledge((prev: any) => {
+                    const exists = prev.some((i: any) => i.id === item.id);
+                    if (exists) return prev.map((i: any) => i.id === item.id ? item : i);
+                    return [...prev, item];
+                });
                 break;
         }
+    };
+
+    const handleCreateNew = (type: 'ec' | 'sc' | 'sb') => {
+        if (!selectedCourseId) return;
+        const id = `${type}-${Date.now()}`;
+        const newItem: any = { id, code: '', description: '', courseId: selectedCourseId };
+        if (type === 'sc') newItem.keyCompetenceDescriptorIds = [];
+        if (type === 'ec') newItem.competenceId = '';
+        
+        handleUpdate(type, newItem);
     };
     
     const handleDelete = (type: 'ec' | 'sc' | 'kc' | 'sb', id: string) => {
@@ -427,6 +449,67 @@ const CurriculumManager = (props: any) => {
     const filteredCompetences = useMemo(() => specificCompetences.filter((sc: SpecificCompetence) => sc.courseId === selectedCourseId), [specificCompetences, selectedCourseId]);
     const filteredBasicKnowledge = useMemo(() => basicKnowledge.filter((sb: BasicKnowledge) => sb.courseId === selectedCourseId), [basicKnowledge, selectedCourseId]);
     
+    const handleExportCurriculum = () => {
+        if (!selectedCourseId) {
+            alert("Por favor, selecciona un curso para exportar su currículo.");
+            return;
+        }
+
+        const course = courses.find((c: Course) => c.id === selectedCourseId);
+        if (!course) return;
+
+        const stageSuffix = isBachilleratoStage(course.level) ? '-bach' : '-eso';
+        
+        const csvRows = [];
+        csvRows.push('type,id,code,description,links');
+
+        const escapeCsv = (text: string) => {
+            if (!text) return '""';
+            const escaped = text.replace(/"/g, '""');
+            return `"${escaped}"`;
+        };
+
+        // 1. Key Competences
+        keyCompetences.forEach((kc: KeyCompetence) => {
+            // Only export KC if it has descriptors for this stage
+            const stageDescriptors = (kc.descriptors || []).filter(d => d.id.endsWith(stageSuffix));
+            if (stageDescriptors.length > 0) {
+                csvRows.push(`KC,${kc.id},${escapeCsv(kc.code)},${escapeCsv(kc.description)}`);
+                
+                // 2. Operational Descriptors
+                stageDescriptors.forEach(od => {
+                    csvRows.push(`OD,${od.id},${escapeCsv(od.code)},${escapeCsv(od.description)},${kc.id}`);
+                });
+            }
+        });
+
+        // 3. Specific Competences
+        filteredCompetences.forEach((sc: SpecificCompetence) => {
+            const links = (sc.keyCompetenceDescriptorIds || []).join(',');
+            csvRows.push(`SC,${sc.id},${escapeCsv(sc.code)},${escapeCsv(sc.description)},${links}`);
+        });
+
+        // 4. Evaluation Criteria
+        filteredCriteria.forEach((ec: EvaluationCriterion) => {
+            csvRows.push(`EC,${ec.id},${escapeCsv(ec.code)},${escapeCsv(ec.description)},${ec.competenceId}`);
+        });
+
+        // 5. Basic Knowledge
+        filteredBasicKnowledge.forEach((sb: BasicKnowledge) => {
+            csvRows.push(`SB,${sb.id},${escapeCsv(sb.code)},${escapeCsv(sb.description)}`);
+        });
+
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `curriculo_${course.level.replace(/\s+/g, '_')}_${course.subject.replace(/\s+/g, '_')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const selectedCourse = useMemo(() => courses.find((c: Course) => c.id === selectedCourseId), [courses, selectedCourseId]);
     const selectedStageSuffix = useMemo(() => {
         if (!selectedCourse) return null;
@@ -480,25 +563,58 @@ const CurriculumManager = (props: any) => {
                 <Accordion title={`Competencias Específicas para ${courseName}`}>
                     <div className="space-y-2">
                         {filteredCompetences.map((sc: SpecificCompetence) => (
-                            <EditableItem key={sc.id} item={sc} type="sc" onSave={handleUpdate} onDelete={handleDelete} />
+                            <EditableItem 
+                                key={sc.id} 
+                                item={sc} 
+                                type="sc" 
+                                onSave={handleUpdate} 
+                                onDelete={handleDelete}
+                                allDescriptors={keyCompetences.flatMap(kc => kc.descriptors.filter(d => !selectedStageSuffix || d.id.endsWith(selectedStageSuffix)))}
+                            />
                         ))}
+                        <button 
+                            onClick={() => handleCreateNew('sc')}
+                            className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                        >
+                            <PlusIcon className="w-4 h-4" /> Añadir Competencia Específica
+                        </button>
                     </div>
                 </Accordion>
 
-                 <Accordion title={`Criterios de Evaluación para ${courseName}`}>
+                <Accordion title={`Criterios de Evaluación para ${courseName}`}>
                     <div className="space-y-2">
                         {filteredCriteria.map((ec: EvaluationCriterion) => (
-                            <EditableItem key={ec.id} item={ec} type="ec" onSave={handleUpdate} onDelete={handleDelete} />
+                            <EditableItem 
+                                key={ec.id} 
+                                item={ec} 
+                                type="ec" 
+                                onSave={handleUpdate} 
+                                onDelete={handleDelete}
+                                allCompetences={filteredCompetences}
+                            />
                         ))}
+                        <button 
+                            onClick={() => handleCreateNew('ec')}
+                            className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                        >
+                            <PlusIcon className="w-4 h-4" /> Añadir Criterio de Evaluación
+                        </button>
                     </div>
-                 </Accordion>
-                 <Accordion title={`Saberes Básicos para ${courseName}`}>
+                </Accordion>
+
+                <Accordion title={`Saberes Básicos para ${courseName}`}>
                     <div className="space-y-2">
                         {filteredBasicKnowledge.map((sb: BasicKnowledge) => (
                             <EditableItem key={sb.id} item={sb} type="sb" onSave={handleUpdate} onDelete={handleDelete} />
                         ))}
+                        <button 
+                            onClick={() => handleCreateNew('sb')}
+                            className="w-full py-2 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-blue-400 hover:text-blue-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
+                        >
+                            <PlusIcon className="w-4 h-4" /> Añadir Saber Básico
+                        </button>
                     </div>
-                 </Accordion>
+                </Accordion>
             </div>
             
             <div className="pt-6 border-t">
@@ -550,6 +666,15 @@ SB,sb-bg3-1,"A.1","La célula como unidad estructural..."`}
                     >
                         Seleccionar y Cargar Archivo CSV...
                     </label>
+                    <button
+                        onClick={handleExportCurriculum}
+                        disabled={!selectedCourseId}
+                        className="flex items-center justify-center gap-2 bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+                        title="Descargar currículo actual en formato CSV"
+                    >
+                        <ArrowDownTrayIcon className="w-5 h-5" />
+                        Exportar CSV
+                    </button>
                 </div>
             </div>
 
@@ -572,7 +697,7 @@ SB,sb-bg3-1,"A.1","La célula como unidad estructural..."`}
     );
 };
 
-const EditableItem = ({ item, type, onSave, onDelete }: any) => {
+const EditableItem = ({ item, type, onSave, onDelete, allDescriptors, allCompetences }: any) => {
     const [isEditing, setIsEditing] = useState(false);
     const [data, setData] = useState(item);
 
@@ -585,40 +710,122 @@ const EditableItem = ({ item, type, onSave, onDelete }: any) => {
         setData(item);
         setIsEditing(false);
     };
+
+    const toggleDescriptor = (id: string) => {
+        const current = data.keyCompetenceDescriptorIds || [];
+        if (current.includes(id)) {
+            setData({ ...data, keyCompetenceDescriptorIds: current.filter((i: string) => i !== id) });
+        } else {
+            setData({ ...data, keyCompetenceDescriptorIds: [...current, id] });
+        }
+    };
     
     if (isEditing) {
         return (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                <input 
-                    value={data.code} 
-                    onChange={(e) => setData({ ...data, code: e.target.value })}
-                    className="w-full p-1 border rounded"
-                    placeholder="Código"
-                />
-                 <textarea 
-                    value={data.description} 
-                    onChange={(e) => setData({ ...data, description: e.target.value })}
-                    className="w-full p-1 border rounded text-sm min-h-[60px]"
-                    placeholder="Descripción"
-                />
-                <div className="flex justify-end gap-2">
-                    <button onClick={handleCancel} className="text-xs font-semibold text-slate-600 hover:text-slate-800">Cancelar</button>
-                    <button onClick={handleSave} className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md">Guardar</button>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                <div className="grid grid-cols-4 gap-2">
+                    <div className="col-span-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Código</label>
+                        <input 
+                            value={data.code} 
+                            onChange={(e) => setData({ ...data, code: e.target.value })}
+                            className="w-full p-1.5 border rounded text-sm font-bold"
+                            placeholder="Ej: 1.1"
+                        />
+                    </div>
+                    <div className="col-span-3">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Descripción</label>
+                        <textarea 
+                            value={data.description} 
+                            onChange={(e) => setData({ ...data, description: e.target.value })}
+                            className="w-full p-1.5 border rounded text-sm min-h-[40px]"
+                            placeholder="Enunciado del elemento..."
+                        />
+                    </div>
+                </div>
+
+                {type === 'sc' && allDescriptors && (
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Descriptores Operativos Vinculados</label>
+                        <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto p-2 border rounded bg-white">
+                            {allDescriptors.map((od: any) => (
+                                <button
+                                    key={od.id}
+                                    type="button"
+                                    onClick={() => toggleDescriptor(od.id)}
+                                    className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                                        (data.keyCompetenceDescriptorIds || []).includes(od.id)
+                                            ? 'bg-blue-600 text-white border-blue-700'
+                                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                    }`}
+                                    title={od.description}
+                                >
+                                    {od.code}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {type === 'ec' && allCompetences && (
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Competencia Específica Vinculada</label>
+                        <select
+                            value={data.competenceId}
+                            onChange={(e) => setData({ ...data, competenceId: e.target.value })}
+                            className="w-full p-1.5 border rounded text-sm bg-white"
+                        >
+                            <option value="">Seleccionar competencia...</option>
+                            {allCompetences.map((sc: any) => (
+                                <option key={sc.id} value={sc.id}>{sc.code}: {sc.description.substring(0, 60)}...</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-blue-100">
+                    <button onClick={handleCancel} className="text-xs font-semibold text-slate-600 hover:text-slate-800 px-2 py-1">Cancelar</button>
+                    <button onClick={handleSave} className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-1.5 rounded-md shadow-sm">Guardar Cambios</button>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="flex items-center gap-2 p-2 group hover:bg-slate-50 rounded-md">
+        <div className="flex items-start gap-3 p-3 group hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
             <div className="flex-grow">
-                <p className="font-semibold text-sm">{item.code}: <span className="font-normal text-slate-700">{item.description}</span></p>
-                {type === 'sc' && <p className="text-xs text-slate-500 mt-1">Descriptores: {(item.keyCompetenceDescriptorIds || []).join(', ')}</p>}
-                 {type === 'ec' && <p className="text-xs text-slate-500 mt-1">Comp. Específica: {item.competenceId}</p>}
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">{item.code}</span>
+                    <p className="text-sm text-slate-700 leading-relaxed">{item.description}</p>
+                </div>
+                {type === 'sc' && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {(item.keyCompetenceDescriptorIds || []).map((id: string) => {
+                            const od = allDescriptors?.find((d: any) => d.id === id);
+                            return (
+                                <span key={id} className="text-[10px] font-medium bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100" title={od?.description}>
+                                    {od?.code || id}
+                                </span>
+                            );
+                        })}
+                    </div>
+                )}
+                {type === 'ec' && (
+                    <div className="mt-1">
+                        {(() => {
+                            const sc = allCompetences?.find((c: any) => c.id === item.competenceId);
+                            return (
+                                <span className="text-[10px] font-medium text-slate-500 italic">
+                                    Vinculado a: {sc ? `${sc.code}` : 'Sin vinculación'}
+                                </span>
+                            );
+                        })()}
+                    </div>
+                )}
             </div>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <button onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-slate-200 rounded-full"><PencilIcon className="w-4 h-4 text-slate-600" /></button>
-                <button onClick={() => onDelete(type, item.id)} className="p-1.5 hover:bg-red-100 rounded-full"><TrashIcon className="w-4 h-4 text-red-500" /></button>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
+                <button onClick={() => setIsEditing(true)} className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-blue-600 transition-colors" title="Editar elemento"><PencilIcon className="w-4 h-4" /></button>
+                <button onClick={() => onDelete(type, item.id)} className="p-1.5 hover:bg-red-100 rounded-full text-slate-400 hover:text-red-600 transition-colors" title="Eliminar elemento"><TrashIcon className="w-4 h-4" /></button>
             </div>
         </div>
     );

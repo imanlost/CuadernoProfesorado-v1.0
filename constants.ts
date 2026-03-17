@@ -106,5 +106,6 @@ export const INITIAL_ACADEMIC_CONFIGURATION: AcademicConfiguration = {
         { min: 6, color: 'yellow', label: 'Bien' },
         { min: 5, color: 'orange', label: 'Suficiente' },
         { min: 0, color: 'red', label: 'Insuficiente' },
-    ]
+    ],
+    passingGrade: 5
 };
