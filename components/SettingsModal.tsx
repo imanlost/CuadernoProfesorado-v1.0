@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import Modal from './Modal';
-import { UserGroupIcon, AcademicCapIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, PlusIcon, BookOpenIcon, ClockIcon, CalendarDaysIcon, ListBulletIcon, ArrowUpIcon, ArrowDownIcon, BeakerIcon } from './Icons';
+import { UserGroupIcon, AcademicCapIcon, ArrowDownTrayIcon, PencilIcon, TrashIcon, PlusIcon, BookOpenIcon, ClockIcon, CalendarDaysIcon, ListBulletIcon, ArrowUpIcon, ArrowDownIcon, BeakerIcon, ComputerDesktopIcon, DocumentDuplicateIcon } from './Icons';
 import type { ClassData, Course, Student, KeyCompetence, SpecificCompetence, EvaluationCriterion, JournalEntry, AcademicConfiguration, Holiday, EvaluationPeriod, BasicKnowledge, ProgrammingUnit, EvaluationTool, GradeScaleRule } from '../types';
 import { ACNEAE_TAGS } from '../constants';
 import ClassModal from './ClassModal';
@@ -38,6 +38,10 @@ interface SettingsModalProps {
     setProgrammingUnits: (updater: (prev: ProgrammingUnit[]) => ProgrammingUnit[]) => void;
     evaluationTools: EvaluationTool[];
     setEvaluationTools: (updater: React.SetStateAction<EvaluationTool[]>) => void;
+    // New props for File System Access API
+    onSaveToLocalFile: () => Promise<void>;
+    onOpenLocalFile: () => Promise<void>;
+    localFileName: string | null;
 }
 
 type SettingsView = 'classes' | 'schedule' | 'courses' | 'academicConfig' | 'curriculum' | 'planner' | 'evaluationTools' | 'backup';
@@ -661,6 +665,7 @@ const AcademicConfigManager: React.FC<{
                 periods: Array.isArray(prev?.periods) ? prev.periods : [],
                 defaultStartView: prev?.defaultStartView || 'calendar',
                 defaultCalendarView: prev?.defaultCalendarView || 'month',
+                passingGrade: typeof prev?.passingGrade === 'number' ? prev.passingGrade : 5,
                 // Initialize defaults if missing
                 gradeScale: Array.isArray(prev?.gradeScale) && prev.gradeScale.length > 0 ? prev.gradeScale : [
                     { min: 9, color: 'emerald', label: 'Sobresaliente' },
@@ -679,7 +684,7 @@ const AcademicConfigManager: React.FC<{
     
     const { evaluationPeriodWeights = {}, gradeScale = [] } = academicConfiguration;
     // Calculate total weight for display
-    const totalWeight = Object.values(evaluationPeriodWeights).reduce((sum: number, w) => sum + (typeof w === 'number' ? w : 0), 0);
+    const totalWeight = Object.values(evaluationPeriodWeights).reduce((sum: number, w: any) => sum + (typeof w === 'number' ? w : 0), 0) as number;
 
 
     const handleConfigChange = (field: keyof AcademicConfiguration, value: any) => {
@@ -789,6 +794,32 @@ const AcademicConfigManager: React.FC<{
                         <button onClick={() => handleAddListItem('evaluationPeriods')} className="text-sm text-blue-600 hover:underline">+ Añadir Periodo</button>
                     </div>
                 </div>
+            </div>
+
+            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                    <AcademicCapIcon className="w-5 h-5" />
+                    Umbral de Aprobado
+                </h4>
+                <p className="text-xs text-blue-600 mb-3">
+                    Define la nota mínima para considerar que un alumno ha aprobado. 
+                    Este valor se usará en todas las estadísticas y resúmenes de éxito.
+                </p>
+                <div className="flex items-center gap-3">
+                    <input 
+                        type="number" 
+                        min="0" 
+                        max="10" 
+                        step="0.1" 
+                        value={academicConfiguration.passingGrade ?? 5} 
+                        onChange={e => handleConfigChange('passingGrade', parseFloat(e.target.value))} 
+                        className="w-24 p-2 border border-blue-200 rounded-lg font-bold text-blue-700 text-center text-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    <span className="text-sm font-medium text-blue-700">Puntos o superior</span>
+                </div>
+                <p className="mt-2 text-[10px] text-blue-500 italic">
+                    * Recuerda ajustar también la "Escala de Calificaciones" más abajo para que los colores coincidan con tu criterio.
+                </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -905,8 +936,8 @@ const AcademicConfigManager: React.FC<{
     );
 };
 
-// ... (BackupManager component remains unchanged) ...
-const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, onOpenExportModal }) => {
+// ... (BackupManager component updated below) ...
+const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, onOpenExportModal, onSaveToLocalFile, onOpenLocalFile, localFileName }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => fileInputRef.current?.click();
@@ -931,21 +962,68 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
         }
     };
 
+    const isFSAASupported = 'showOpenFilePicker' in window;
+
     return (
         <div className="space-y-6">
             <h3 className="text-xl font-bold text-slate-800">Copia de Seguridad y Datos</h3>
+
+             {/* Local File Sync Section */}
+            <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">
+                <div className="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 className="font-bold text-indigo-800 flex items-center gap-2">
+                            <ComputerDesktopIcon className="w-5 h-5"/>
+                            Modo Archivo Local (Sincronización)
+                        </h4>
+                        <p className="text-sm text-indigo-700 mt-1">
+                            Abre un archivo directamente desde tu disco duro (ej. en tu carpeta de Dropbox/Drive). 
+                            La aplicación guardará los cambios automáticamente en ese archivo.
+                        </p>
+                    </div>
+                    {localFileName && (
+                        <span className="bg-indigo-200 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full border border-indigo-300">
+                            Conectado: {localFileName}
+                        </span>
+                    )}
+                </div>
+
+                {!isFSAASupported ? (
+                    <div className="text-sm text-amber-800 bg-amber-50 p-3 rounded-md border border-amber-200 mt-3 space-y-2">
+                         <p className="font-bold">⚠️ Esta función requiere un navegador compatible.</p>
+                         <p>Firefox y Safari bloquean el acceso directo al sistema de archivos por seguridad. Para usar la sincronización automática, debes usar <strong>Chrome, Edge o Opera</strong> en un ordenador.</p>
+                         <p className="text-xs mt-1 italic">Si no puedes cambiar de navegador, utiliza los botones de "Exportar/Importar Copia" de abajo manualmente.</p>
+                    </div>
+                ) : (
+                    <div className="mt-4 flex gap-3">
+                         <button 
+                            onClick={onOpenLocalFile} 
+                            className={`flex-1 py-2 rounded-md font-medium shadow-sm transition-colors ${localFileName ? 'bg-white text-indigo-700 border border-indigo-300 hover:bg-indigo-100' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                        >
+                            {localFileName ? 'Cambiar Archivo Local' : 'Abrir Archivo Existente'}
+                        </button>
+                        <button 
+                            onClick={onSaveToLocalFile} 
+                            className="flex-1 bg-white text-indigo-700 border border-indigo-300 py-2 rounded-md hover:bg-indigo-100 transition-colors shadow-sm font-medium"
+                        >
+                            Crear Nuevo Archivo
+                        </button>
+                    </div>
+                )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
                     <h4 className="font-bold text-blue-800 mb-2">Exportar Copia de Seguridad</h4>
-                    <p className="text-sm text-blue-700 mb-4">Descarga un archivo .db con TODOS tus datos (clases, notas, configuración...).</p>
+                    <p className="text-sm text-blue-700 mb-4">Descarga manual de un archivo .db con TODOS tus datos.</p>
                     <button onClick={handleExportClick} className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors shadow-sm font-medium">
                         Descargar Copia (.db)
                     </button>
                 </div>
 
                 <div className="p-4 border rounded-lg bg-green-50 border-green-200">
-                    <h4 className="font-bold text-green-800 mb-2">Restaurar Copia</h4>
-                    <p className="text-sm text-green-700 mb-4">Sube un archivo .db previamente exportado para restaurar tus datos.</p>
+                    <h4 className="font-bold text-green-800 mb-2">Importar Copia Manual</h4>
+                    <p className="text-sm text-green-700 mb-4">Sube un archivo .db para restaurar tus datos (reemplaza lo actual).</p>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".db,.sqlite" className="hidden" />
                     <button onClick={handleImportClick} className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors shadow-sm font-medium">
                         Subir Archivo (.db)

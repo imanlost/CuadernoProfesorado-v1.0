@@ -2,15 +2,15 @@
 import type { ClassData, EvaluationCriterion, SpecificCompetence, KeyCompetence, Assignment, Grade, AcademicConfiguration, EvaluationTool, Rubric, RubricItem, GradeScaleRule } from '../types';
 
 // Helper to determine color based on configuration
-export const getGradeColorClass = (grade: number | null, scale?: GradeScaleRule[]): string => {
+export const getGradeColorClass = (grade: number | null, scale?: GradeScaleRule[], passingGrade: number = 5): string => {
     if (grade === null || grade === undefined) return 'bg-transparent text-slate-500';
     
     // Default fallback if no scale provided or empty (Expanded Gradation)
     if (!scale || scale.length === 0) {
-        if (grade < 5) return 'bg-red-100 text-red-800';
-        if (grade < 6) return 'bg-orange-100 text-orange-800';
-        if (grade < 7) return 'bg-yellow-100 text-yellow-800';
-        if (grade < 9) return 'bg-lime-100 text-lime-800';
+        if (grade < passingGrade) return 'bg-red-100 text-red-800';
+        if (grade < (passingGrade + 1)) return 'bg-orange-100 text-orange-800';
+        if (grade < (passingGrade + 2)) return 'bg-yellow-100 text-yellow-800';
+        if (grade < (passingGrade + 4)) return 'bg-lime-100 text-lime-800';
         return 'bg-emerald-100 text-emerald-800';
     }
 
@@ -184,7 +184,7 @@ export const calculateAssignmentScoresForStudent = (studentId: string, assignmen
     return scores;
 };
 
-export const calculateEvaluationPeriodGradeForStudent = (studentId: string, classData: ClassData, evaluationPeriodId: string, gradeScale?: GradeScaleRule[]): { grade: number | null; styleClasses: string } => {
+export const calculateEvaluationPeriodGradeForStudent = (studentId: string, classData: ClassData, evaluationPeriodId: string, gradeScale?: GradeScaleRule[], passingGrade: number = 5): { grade: number | null; styleClasses: string } => {
     const { assignments, categories, grades } = classData;
     
     // 1. Identify Recovery Assignments in this period
@@ -257,24 +257,24 @@ export const calculateEvaluationPeriodGradeForStudent = (studentId: string, clas
         }
     });
 
-    if (totalCategoryWeight === 0) return { grade: null, styleClasses: getGradeColorClass(null, gradeScale) };
+    if (totalCategoryWeight === 0) return { grade: null, styleClasses: getGradeColorClass(null, gradeScale, passingGrade) };
 
     // Normalize result if weights don't add up to 100 (e.g. if one category is empty)
     // weightedCategorySum / totalCategoryWeight gives the weighted average relative to the existing categories
     const finalGrade = weightedCategorySum / totalCategoryWeight;
     
-    return { grade: finalGrade, styleClasses: getGradeColorClass(finalGrade, gradeScale) };
+    return { grade: finalGrade, styleClasses: getGradeColorClass(finalGrade, gradeScale, passingGrade) };
 };
 
 
 export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
-    const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale } = academicConfiguration;
+    const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;
     
     let totalWeightUsed = 0;
     let weightedSum = 0;
 
     evaluationPeriods.forEach(period => {
-        const periodGradeResult = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id); // Internal call uses standard or no scale, doesn't matter for numbers
+        const periodGradeResult = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id, gradeScale, passingGrade);
         const periodWeight = evaluationPeriodWeights[period.id];
 
         if (periodGradeResult.grade !== null && periodWeight !== undefined && periodWeight !== null) {
@@ -283,11 +283,11 @@ export const calculateOverallFinalGradeForStudent = (studentId: string, classDat
         }
     });
 
-    if (totalWeightUsed === 0) return { grade: 'N/A', styleClasses: getGradeColorClass(null, gradeScale) };
+    if (totalWeightUsed === 0) return { grade: 'N/A', styleClasses: getGradeColorClass(null, gradeScale, passingGrade) };
 
     const finalGrade = weightedSum / totalWeightUsed;
     
-    return { grade: finalGrade.toFixed(2), styleClasses: getGradeColorClass(finalGrade, gradeScale) };
+    return { grade: finalGrade.toFixed(2), styleClasses: getGradeColorClass(finalGrade, gradeScale, passingGrade) };
 };
 
 export const calculateStudentCriterionGrades = (

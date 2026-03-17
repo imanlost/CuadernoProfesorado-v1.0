@@ -137,6 +137,7 @@ export interface ProgrammingUnit {
     sessionDetails: SessionDetail[];
     linkedCriteriaIds: string[];
     linkedBasicKnowledgeIds: string[];
+    isTaught?: boolean;
 }
 
 export interface ClassData {
@@ -196,4 +197,5 @@ export interface AcademicConfiguration {
   defaultStartView?: 'calendar' | 'gradebook' | 'journal';
   defaultCalendarView?: 'month' | 'week' | 'day';
   gradeScale?: GradeScaleRule[];
+  passingGrade?: number;
 }

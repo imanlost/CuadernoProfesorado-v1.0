@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { ClassData, Student, Assignment, Grade, EvaluationCriterion, Category, SpecificCompetence, KeyCompetence, ProgrammingUnit, EvaluationPeriod, AcademicConfiguration, EvaluationTool, Course } from '../types';
-import { PlusIcon, PencilIcon, TrashIcon, LinkIcon, BookOpenIcon, ClipboardDocumentIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpTrayIcon, DocumentDuplicateIcon } from './Icons';
+import { PlusIcon, PencilIcon, TrashIcon, LinkIcon, BookOpenIcon, ClipboardDocumentIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpTrayIcon, DocumentDuplicateIcon, TableCellsIcon } from './Icons';
 import AssignmentModal from './AssignmentModal';
 import GradeEntryModal from './GradeEntryModal';
 import CategoryModal from './CategoryModal';
@@ -47,6 +47,10 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
   const [activePeriodId, setActivePeriodId] = useState<string>('final');
   const [hasAutoSelectedPeriod, setHasAutoSelectedPeriod] = useState(false);
   
+  // Spreadsheet Mode State
+  const [isSpreadsheetMode, setIsSpreadsheetMode] = useState(false);
+  const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [assignmentToEdit, setAssignmentToEdit] = useState<Assignment | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
@@ -123,7 +127,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
     for (const student of classData.students) {
         const studentGrades = new Map<string, { grade: number | null; styleClasses: string }>();
         evaluationPeriods.forEach(period => {
-            studentGrades.set(period.id, calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id, academicConfiguration.gradeScale));
+            studentGrades.set(period.id, calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id, academicConfiguration.gradeScale, academicConfiguration.passingGrade));
         });
         periodGrades.set(student.id, studentGrades);
     }
@@ -192,6 +196,8 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
   };
   
   const handleOpenGradeEntry = (student: Student, assignment: Assignment) => {
+    // Disable modal in spreadsheet mode
+    if (isSpreadsheetMode) return;
     const grade = gradesMap.get(`${student.id}-${assignment.id}`) || null;
     setGradeEntryData({ student, assignment, grade });
     setIsGradeEntryModalOpen(true);
@@ -261,6 +267,74 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
         setIsGradeEntryModalOpen(false);
     }
   };
+  
+  // -- Spreadsheet Mode Logic --
+  
+  // Update a single grade value directly from the grid (for direct_grade assignments)
+  const handleQuickGradeUpdate = (studentId: string, assignment: Assignment, valueStr: string) => {
+      let numericValue: number | null = null;
+      if (valueStr.trim() !== '') {
+          numericValue = parseFloat(valueStr.replace(',', '.'));
+          if (isNaN(numericValue) || numericValue < 0 || numericValue > 10) return; // Invalid input, ignore
+      }
+
+      // Reconstruct the criterionScores object. 
+      // In direct mode, we apply this single value to ALL linked criteria (similar to GradeEntryModal "Calificación Única")
+      const criterionScores: Record<string, number | null> = {};
+      if (numericValue !== null) {
+          assignment.linkedCriteria.forEach(lc => {
+              criterionScores[lc.criterionId] = numericValue;
+          });
+          // Also set recovery_grade if this assignment is a recovery one (though mostly linked criteria cover it)
+          // But to be safe if it's a pure recovery container:
+          if (assignment.recoversAssignmentIds && assignment.recoversAssignmentIds.length > 0) {
+              criterionScores['recovery_grade'] = numericValue;
+          }
+      } else {
+          // If empty, we are basically clearing it. But we should ideally pass nulls to all linked
+           assignment.linkedCriteria.forEach(lc => {
+              criterionScores[lc.criterionId] = null;
+          });
+      }
+
+      // Reuse the robust save function, but without the nextStudent navigation logic
+      handleSaveGrade(studentId, assignment.id, { criterionScores });
+  };
+  
+  const focusCell = (studentIndex: number, assignmentIndex: number) => {
+      const key = `${studentIndex}-${assignmentIndex}`;
+      const el = inputRefs.current.get(key);
+      if (el) {
+          el.focus();
+          el.select(); // Select text for quick overwrite
+      }
+  };
+
+  const handleGridKeyDown = (e: React.KeyboardEvent, studentIndex: number, assignmentIndex: number) => {
+      if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          focusCell(studentIndex - 1, assignmentIndex);
+      } else if (e.key === 'ArrowDown' || e.key === 'Enter') {
+          e.preventDefault();
+          focusCell(studentIndex + 1, assignmentIndex);
+      } else if (e.key === 'ArrowLeft') {
+           // Prevent conflict with text navigation if cursor is not at start? 
+           // For number inputs, usually OK to navigate if at boundaries. 
+           // For simplicity, shift + arrow or just arrow if empty/selected works.
+           // Let's keep it simple: strict grid movement.
+           if (e.currentTarget.getAttribute('type') === 'number' || (e.target as HTMLInputElement).selectionStart === 0) {
+               // Move cell
+               // Finding previous assignment index is tricky because of category grouping.
+               // We will just try to decrement, but note that assignmentIndex here refers to the FLATTENED list index.
+               focusCell(studentIndex, assignmentIndex - 1);
+           }
+      } else if (e.key === 'ArrowRight') {
+           if (e.currentTarget.getAttribute('type') === 'number' || (e.target as HTMLInputElement).selectionStart === (e.target as HTMLInputElement).value.length) {
+              focusCell(studentIndex, assignmentIndex + 1);
+           }
+      }
+  };
+
 
   const handleBulkSaveGrades = (gradesToSave: Map<string, number>) => {
     if (!assignmentForImport) return;
@@ -402,6 +476,17 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       return allClasses.filter(c => academicCourseIds.has(c.courseId)).sort((a, b) => a.name.localeCompare(b.name));
   }, [allClasses, allCourses]);
 
+  // Flattened list of assignments for index calculation in grid navigation
+  const flattenedAssignments = useMemo(() => {
+      if (activePeriodId === 'final') return [];
+      const list: Assignment[] = [];
+      categoriesForPeriod.forEach(cat => {
+          const catAssignments = assignmentsForPeriod.filter(a => a.categoryId === cat.id);
+          list.push(...catAssignments);
+      });
+      return list;
+  }, [categoriesForPeriod, assignmentsForPeriod, activePeriodId]);
+
   return (
     <div className="bg-white rounded-xl shadow-sm">
       {/* HEADER: Removed sticky here to allow scrolling if needed, minimizing overlap risk */}
@@ -450,6 +535,66 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
           </button>
         </div>
       </div>
+      
+      {/* Spreadsheet Mode Toggle Bar */}
+      {activePeriodId !== 'final' && (
+          <div className={`px-4 py-2 border-b flex justify-between items-center ${isSpreadsheetMode ? 'bg-green-50' : 'bg-slate-50'}`}>
+              <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsSpreadsheetMode(!isSpreadsheetMode)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        isSpreadsheetMode 
+                        ? 'bg-green-600 text-white shadow-sm ring-1 ring-green-600 ring-offset-1' 
+                        : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                      <TableCellsIcon className="w-4 h-4" />
+                      {isSpreadsheetMode ? 'Edición Rápida Activa' : 'Modo Edición Rápida'}
+                  </button>
+                  
+                  {/* Quick Statistics Indicator */}
+                  <div className="hidden sm:flex items-center gap-4 ml-4 px-4 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm">
+                      <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full ${activePeriodId === 'final' ? 'bg-amber-500' : 'bg-blue-500'}`}></div>
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                              {activePeriodId === 'final' ? 'Éxito Final' : 'Éxito Ev.'}
+                          </span>
+                      </div>
+                      <span className={`text-sm font-bold ${
+                          (() => {
+                              const stats = activePeriodId === 'final' 
+                                ? Array.from(studentOverallFinalGrades.values()).map(v => (v as { grade: string }).grade !== 'N/A' ? parseFloat((v as { grade: string }).grade) : null)
+                                : Array.from(studentPeriodGrades.values()).map(m => (m as Map<string, { grade: number }>).get(activePeriodId)?.grade ?? null);
+                              
+                              const validGrades = stats.filter((g): g is number => g !== null);
+                              const passCount = validGrades.filter(g => g >= (academicConfiguration.passingGrade ?? 5)).length;
+                              const percentage = validGrades.length > 0 ? (passCount / validGrades.length) * 100 : 0;
+                              
+                              return percentage >= 50 ? 'text-emerald-600' : 'text-red-600';
+                          })()
+                      }`}>
+                          {(() => {
+                              const stats = activePeriodId === 'final' 
+                                ? Array.from(studentOverallFinalGrades.values()).map(v => (v as { grade: string }).grade !== 'N/A' ? parseFloat((v as { grade: string }).grade) : null)
+                                : Array.from(studentPeriodGrades.values()).map(m => (m as Map<string, { grade: number }>).get(activePeriodId)?.grade ?? null);
+                              
+                              const validGrades = stats.filter((g): g is number => g !== null);
+                              const passCount = validGrades.filter(g => g >= (academicConfiguration.passingGrade ?? 5)).length;
+                              const percentage = validGrades.length > 0 ? (passCount / validGrades.length) * 100 : 0;
+                              
+                              return `${percentage.toFixed(1)}% Aprobados (${passCount}/${validGrades.length})`;
+                          })()}
+                      </span>
+                  </div>
+
+                  {isSpreadsheetMode && (
+                      <span className="text-xs text-green-700 font-medium animate-pulse">
+                          Usa las flechas del teclado y Enter para moverte.
+                      </span>
+                  )}
+              </div>
+          </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-left">
@@ -508,13 +653,15 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                     }
                     return assignmentsForCat.map((a, idx) => (
                         <th key={a.id} className={`p-2 font-normal text-center border-l ${idx === assignmentsForCat.length - 1 ? 'border-r-2 border-r-slate-400' : 'border-r'} min-w-[120px]`} title={a.name}>
-                          <div className="truncate w-full mx-auto px-1">{a.name}</div>
-                          <div className="flex justify-center items-center gap-1 mt-1">
-                            <button onClick={() => handleEditAssignment(a)} className="p-1 hover:bg-slate-200 rounded-full"><PencilIcon className="w-3 h-3"/></button>
-                            <button onClick={() => handleDeleteAssignment(a.id)} className="p-1 hover:bg-slate-200 rounded-full"><TrashIcon className="w-3 h-3 text-red-500"/></button>
-                            <button onClick={() => setAssignmentToCopy(a)} className="p-1 hover:bg-slate-200 rounded-full" title="Copiar tarea a otra clase"><DocumentDuplicateIcon className="w-3 h-3 text-slate-600"/></button>
-                            <button onClick={() => {setAssignmentForImport(a); setIsBulkImportModalOpen(true);}} className="p-1 hover:bg-slate-200 rounded-full" title="Importar notas en lote"><ArrowUpTrayIcon className="w-3 h-3 text-blue-500"/></button>
-                          </div>
+                          <div className="truncate w-full mx-auto px-1 max-w-[150px]">{a.name}</div>
+                          { !isSpreadsheetMode && (
+                              <div className="flex justify-center items-center gap-1 mt-1">
+                                <button onClick={() => handleEditAssignment(a)} className="p-1 hover:bg-slate-200 rounded-full"><PencilIcon className="w-3 h-3"/></button>
+                                <button onClick={() => handleDeleteAssignment(a.id)} className="p-1 hover:bg-slate-200 rounded-full"><TrashIcon className="w-3 h-3 text-red-500"/></button>
+                                <button onClick={() => setAssignmentToCopy(a)} className="p-1 hover:bg-slate-200 rounded-full" title="Copiar tarea a otra clase"><DocumentDuplicateIcon className="w-3 h-3 text-slate-600"/></button>
+                                <button onClick={() => {setAssignmentForImport(a); setIsBulkImportModalOpen(true);}} className="p-1 hover:bg-slate-200 rounded-full" title="Importar notas en lote"><ArrowUpTrayIcon className="w-3 h-3 text-blue-500"/></button>
+                              </div>
+                          )}
                         </th>
                     ))
                 })}
@@ -522,12 +669,12 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
             )}
           </thead>
           <tbody>
-            {classData.students.map((student, index) => (
+            {classData.students.map((student, studentIndex) => (
               <tr key={student.id} className="bg-white border-b hover:bg-slate-50/50">
                 {/* Fix: Ensure student cell has z-10 to slide UNDER the sticky header (z-30) but over standard cells if scrolling horizontal */}
                 <td className="px-3 py-2 font-medium text-slate-900 sticky left-0 bg-white hover:bg-slate-50/50 z-10 w-52 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group">
                     <div className="flex items-center gap-1 w-full">
-                        <span className="text-xs text-slate-400 w-5 text-right font-mono shrink-0 mr-1">{index + 1}</span>
+                        <span className="text-xs text-slate-400 w-5 text-right font-mono shrink-0 mr-1">{studentIndex + 1}</span>
                         <button 
                             onClick={() => setSelectedStudentForSummary(student)}
                             className="flex items-center gap-2 text-left w-full hover:text-blue-600 transition-colors group-hover:underline truncate"
@@ -554,10 +701,41 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                       }
                       return assignmentsForCat.map((a, idx) => {
                         const score = studentAssignmentScores.get(student.id)?.get(a.id);
-                        const styleClasses = getGradeStyleClasses(score ?? null, academicConfiguration);
+                        const styleClasses = getGradeColorClass(score ?? null, academicConfiguration.gradeScale);
+                        // Calculate global index for keyboard nav
+                        const globalAssignmentIndex = flattenedAssignments.findIndex(fa => fa.id === a.id);
+                        
                         return (
-                          <td key={a.id} className={`p-2 text-center font-bold text-base cursor-pointer hover:bg-blue-50 border-l ${idx === assignmentsForCat.length - 1 ? 'border-r-2 border-r-slate-400' : 'border-r'} ${styleClasses}`} onClick={() => handleOpenGradeEntry(student, a)}>
-                            {score?.toFixed(2) ?? '-'}
+                          <td 
+                            key={a.id} 
+                            className={`p-0 border-l ${idx === assignmentsForCat.length - 1 ? 'border-r-2 border-r-slate-400' : 'border-r'} ${!isSpreadsheetMode ? styleClasses : ''}`} 
+                          >
+                             {isSpreadsheetMode && a.evaluationMethod === 'direct_grade' ? (
+                                 <input 
+                                    ref={el => {
+                                        if (el) inputRefs.current.set(`${studentIndex}-${globalAssignmentIndex}`, el);
+                                        else inputRefs.current.delete(`${studentIndex}-${globalAssignmentIndex}`);
+                                    }}
+                                    type="number"
+                                    min="0" max="10" step="0.01"
+                                    defaultValue={score !== null ? score : ''}
+                                    onBlur={(e) => handleQuickGradeUpdate(student.id, a, e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleQuickGradeUpdate(student.id, a, e.currentTarget.value);
+                                        }
+                                        handleGridKeyDown(e, studentIndex, globalAssignmentIndex);
+                                    }}
+                                    className="w-full h-full text-center p-2 focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:bg-blue-50 border-0 outline-none bg-transparent font-medium"
+                                 />
+                             ) : (
+                                <div 
+                                    onClick={() => handleOpenGradeEntry(student, a)}
+                                    className={`w-full h-full p-2 text-center font-bold text-base cursor-pointer hover:bg-blue-50/50 flex items-center justify-center ${!isSpreadsheetMode ? '' : 'text-slate-400'}`}
+                                >
+                                    {score?.toFixed(2) ?? (isSpreadsheetMode && a.evaluationMethod !== 'direct_grade' ? '...' : '-')}
+                                </div>
+                             )}
                           </td>
                         )
                       })
@@ -631,6 +809,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
             criteria={criteria}
             specificCompetences={specificCompetences}
             keyCompetences={keyCompetences}
+            onStudentChange={(newStudent) => setSelectedStudentForSummary(newStudent)}
           />
       )}
       {assignmentToCopy && (
