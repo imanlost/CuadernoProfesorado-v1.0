@@ -958,7 +958,12 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
             const a = document.createElement('a');
             a.href = url;
             a.download = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
+            document.body.appendChild(a);
             a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
         }
     };
 
