@@ -266,6 +266,104 @@ export const calculateEvaluationPeriodGradeForStudent = (studentId: string, clas
     return { grade: finalGrade, styleClasses: getGradeColorClass(finalGrade, gradeScale, passingGrade) };
 };
 
+export interface CategoryBreakdown {
+    id: string;
+    name: string;
+    weight: number;
+    average: number | null;
+    assignments: {
+        id: string;
+        name: string;
+        score: number | null;
+    }[];
+}
+
+export interface PeriodGradeBreakdown {
+    studentId: string;
+    periodId: string;
+    finalGrade: number | null;
+    categories: CategoryBreakdown[];
+}
+
+export const calculateDetailedPeriodGradeBreakdown = (studentId: string, classData: ClassData, evaluationPeriodId: string): PeriodGradeBreakdown => {
+    const { assignments, categories, grades } = classData;
+    
+    // 1. Identify Recovery Assignments
+    const recoveryAssignments = assignments.filter(a => {
+        const cat = categories.find(c => c.id === a.categoryId);
+        return cat?.type === 'recovery' && a.evaluationPeriodId === evaluationPeriodId;
+    });
+
+    const recoveryMap = new Map<string, number>();
+    recoveryAssignments.forEach(recAssignment => {
+        const grade = grades.find(g => g.studentId === studentId && g.assignmentId === recAssignment.id);
+        const score = calculateSingleAssignmentScore(recAssignment, grade);
+        if (score !== null) {
+            (recAssignment.recoversAssignmentIds || []).forEach(recoveredId => {
+                const currentRec = recoveryMap.get(recoveredId);
+                if (currentRec === undefined || score > currentRec) {
+                    recoveryMap.set(recoveredId, score);
+                }
+            });
+        }
+    });
+
+    // 2. Process Categories
+    const categoriesForPeriod = categories.filter(c => c.evaluationPeriodId === evaluationPeriodId && c.type !== 'recovery');
+    const categoryBreakdowns: CategoryBreakdown[] = [];
+    
+    let totalCategoryWeight = 0;
+    let weightedCategorySum = 0;
+
+    categoriesForPeriod.forEach(category => {
+        const assignmentsInCategory = assignments.filter(a => a.categoryId === category.id);
+        const assignmentScores: { id: string; name: string; score: number | null }[] = [];
+        const validScores: number[] = [];
+
+        assignmentsInCategory.forEach(assignment => {
+            const grade = grades.find(g => g.studentId === studentId && g.assignmentId === assignment.id);
+            let score = calculateSingleAssignmentScore(assignment, grade);
+
+            if (recoveryMap.has(assignment.id)) {
+                const recoveryScore = recoveryMap.get(assignment.id)!;
+                if (score !== null) {
+                    score = Math.max(score, recoveryScore);
+                } else {
+                    score = recoveryScore;
+                }
+            }
+
+            assignmentScores.push({ id: assignment.id, name: assignment.name, score });
+            if (score !== null) {
+                validScores.push(score);
+            }
+        });
+
+        let categoryAverage: number | null = null;
+        if (validScores.length > 0) {
+            categoryAverage = validScores.reduce((sum, g) => sum + g, 0) / validScores.length;
+            weightedCategorySum += categoryAverage * category.weight;
+            totalCategoryWeight += category.weight;
+        }
+
+        categoryBreakdowns.push({
+            id: category.id,
+            name: category.name,
+            weight: category.weight,
+            average: categoryAverage,
+            assignments: assignmentScores
+        });
+    });
+
+    const finalGrade = totalCategoryWeight > 0 ? weightedCategorySum / totalCategoryWeight : null;
+
+    return {
+        studentId,
+        periodId: evaluationPeriodId,
+        finalGrade,
+        categories: categoryBreakdowns
+    };
+};
 
 export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
     const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;

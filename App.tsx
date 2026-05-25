@@ -61,6 +61,10 @@ const indexedDB = {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;
+        if (!db.objectStoreNames.contains(DB_STORE_NAME)) {
+            resolve(undefined);
+            return;
+        }
         const tx = db.transaction(DB_STORE_NAME, 'readonly');
         const store = tx.objectStore(DB_STORE_NAME);
         const getRequest = store.get('db_file');
@@ -68,7 +72,9 @@ const indexedDB = {
         getRequest.onerror = () => reject(getRequest.error);
       };
       request.onupgradeneeded = () => {
-        request.result.createObjectStore(DB_STORE_NAME);
+        if (!request.result.objectStoreNames.contains(DB_STORE_NAME)) {
+            request.result.createObjectStore(DB_STORE_NAME);
+        }
       };
     });
   },
@@ -86,6 +92,38 @@ const indexedDB = {
       };
     });
   },
+  getFileHandle: (): Promise<FileSystemFileHandle | undefined> => {
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(DB_NAME, 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(DB_STORE_NAME)) {
+            resolve(undefined);
+            return;
+        }
+        const tx = db.transaction(DB_STORE_NAME, 'readonly');
+        const store = tx.objectStore(DB_STORE_NAME);
+        const getRequest = store.get('file_handle');
+        getRequest.onsuccess = () => resolve(getRequest.result);
+        getRequest.onerror = () => reject(getRequest.error);
+      };
+    });
+  },
+  setFileHandle: (handle: FileSystemFileHandle | null): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(DB_NAME, 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction(DB_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(DB_STORE_NAME);
+        const setRequest = handle ? store.put(handle, 'file_handle') : store.delete('file_handle');
+        setRequest.onsuccess = () => resolve();
+        setRequest.onerror = () => reject(setRequest.error);
+      };
+    });
+  },
 };
 
 // Custom hook for SQLite database management
@@ -97,6 +135,36 @@ function useDatabase() {
     
     // File System Access API Handle
     const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null);
+    const [filePermissionGranted, setFilePermissionGranted] = useState(false);
+
+    const verifyFilePermission = async (handle: FileSystemFileHandle) => {
+        try {
+            const options = { mode: 'readwrite' };
+            if ((await (handle as any).queryPermission(options)) === 'granted') {
+                setFilePermissionGranted(true);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error("Error verifying permission", e);
+            return false;
+        }
+    };
+
+    const requestFilePermission = async () => {
+        if (!fileHandle) return false;
+        try {
+            const options = { mode: 'readwrite' };
+            if ((await (fileHandle as any).requestPermission(options)) === 'granted') {
+                setFilePermissionGranted(true);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error("Error requesting permission", e);
+            return false;
+        }
+    };
 
     const loadDataFromDb = (db: any) => {
         try {
@@ -108,9 +176,12 @@ function useDatabase() {
                     loadedState.evaluationTools = [];
                 }
                 return loadedState;
+            } else {
+                throw new Error("La base de datos no contiene la tabla de datos del cuaderno ('app_data').");
             }
         } catch (e) {
-            console.error("Could not read from DB, maybe it's new?", e);
+            console.error("Error reading from SQLite Database:", e);
+            alert("El archivo seleccionado no es una copia de seguridad válida de esta aplicación (falta tabla principal).");
         }
         return null;
     };
@@ -147,6 +218,13 @@ function useDatabase() {
                 dbRef.current = db;
                 const data = loadDataFromDb(db);
                 setAppState(data);
+
+                // Try to restore file handle
+                const savedHandle = await indexedDB.getFileHandle();
+                if (savedHandle) {
+                    setFileHandle(savedHandle);
+                    await verifyFilePermission(savedHandle);
+                }
             } catch (err) {
                 console.error("Database initialization failed:", err);
                 setError("No se pudo cargar la base de datos.");
@@ -176,7 +254,7 @@ function useDatabase() {
                     await indexedDB.set(binaryDb);
 
                     // 2. If a local file handle exists, write to disk!
-                    if (fileHandle) {
+                    if (fileHandle && filePermissionGranted) {
                         const writable = await fileHandle.createWritable();
                         await writable.write(binaryDb);
                         await writable.close();
@@ -236,78 +314,117 @@ function useDatabase() {
 
     // File System Access API Handlers
     const saveToLocalFile = async () => {
-        if (!('showSaveFilePicker' in window)) {
-            alert("Tu navegador no soporta guardar archivos directamente. Usa Chrome, Edge u Opera.");
-            return;
-        }
-        try {
-            const handle = await (window as any).showSaveFilePicker({
-                suggestedName: 'cuaderno-docente.db',
-                types: [{
-                    description: 'SQLite Database',
-                    accept: { 'application/x-sqlite3': ['.db', '.sqlite'] },
-                }],
-            });
-            setFileHandle(handle);
-            // Trigger an immediate save to this new handle
-            const db = dbRef.current;
-            if (db) {
-                const binaryDb = db.export();
+        const supportsPicker = 'showSaveFilePicker' in window;
+        const db = dbRef.current;
+        if (!db) return;
+        const binaryDb = db.export();
+
+        if (supportsPicker) {
+            try {
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`,
+                    types: [{
+                        description: 'SQLite Database',
+                        accept: { 'application/x-sqlite3': ['.db', '.sqlite', '.sqlite3'] },
+                    }],
+                });
+                setFileHandle(handle);
+                setFilePermissionGranted(true);
+                await indexedDB.setFileHandle(handle);
+
                 const writable = await handle.createWritable();
                 await writable.write(binaryDb);
                 await writable.close();
                 alert(`Conectado exitosamente. Los cambios se guardarán automáticamente en "${handle.name}".`);
-            }
-        } catch (err: any) {
-            if (err.name !== 'AbortError') {
-                console.error(err);
-                alert("Error al guardar el archivo.");
+                return;
+            } catch (err: any) {
+                if (err.name === 'AbortError') return;
+                console.warn("Picker failed, falling back to download", err);
             }
         }
+
+        // Fallback or No Support: Normal Download
+        const blob = new Blob([binaryDb], { type: 'application/x-sqlite3' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     const openLocalFile = async () => {
-        if (!('showOpenFilePicker' in window)) {
-             alert("Tu navegador no soporta abrir archivos locales directamente. Usa Chrome, Edge u Opera.");
-             return;
-        }
-        try {
-            const [handle] = await (window as any).showOpenFilePicker({
-                types: [{
-                    description: 'SQLite Database',
-                    accept: { 'application/x-sqlite3': ['.db', '.sqlite'] },
-                }],
-                multiple: false
-            });
-            
-            const file = await handle.getFile();
-            const buffer = await file.arrayBuffer();
-            
-            // Standard Import Logic
-            setLoading(true);
-            // FIX: Use window.initSqlJs directly as it is declared in global interface
-            const SQL = await window.initSqlJs({ locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
-            const db = new SQL.Database(new Uint8Array(buffer));
-            dbRef.current = db;
-            const data = loadDataFromDb(db);
-            
-            if (data) {
-                setAppState(data);
-                const binaryDb = db.export(); 
-                await indexedDB.set(binaryDb);
-                setFileHandle(handle); // Set handle for future autosaves
-                alert(`Archivo "${handle.name}" cargado y vinculado. Los cambios se sincronizarán automáticamente.`);
-            } else {
-                throw new Error("El archivo no es una base de datos válida.");
-            }
-        } catch (err: any) {
-             if (err.name !== 'AbortError') {
+        const supportsPicker = 'showOpenFilePicker' in window;
+        
+        const processFile = async (file: File, handle?: any) => {
+            try {
+                const buffer = await file.arrayBuffer();
+                setLoading(true);
+                const SQL = await window.initSqlJs({ locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+                const db = new SQL.Database(new Uint8Array(buffer));
+                dbRef.current = db;
+                const data = loadDataFromDb(db);
+                
+                if (data) {
+                    setAppState(data);
+                    const binaryDb = db.export(); 
+                    await indexedDB.set(binaryDb);
+                    if (handle) {
+                        setFileHandle(handle);
+                        setFilePermissionGranted(true);
+                        await indexedDB.setFileHandle(handle);
+                        alert(`Archivo "${handle.name}" cargado y vinculado. Los cambios se sincronizarán automáticamente.`);
+                    } else {
+                        alert("Archivo cargado exitosamente.");
+                    }
+                } else {
+                    throw new Error("El archivo no es una base de datos válida.");
+                }
+            } catch (err: any) {
                 console.error(err);
-                alert("Error al abrir el archivo.");
+                alert("Error al cargar el archivo.");
+            } finally {
+                setLoading(false);
             }
-        } finally {
-            setLoading(false);
+        };
+
+        if (supportsPicker) {
+            try {
+                const [handle] = await (window as any).showOpenFilePicker({
+                    types: [{
+                        description: 'SQLite Database',
+                        accept: { 'application/x-sqlite3': ['.db', '.sqlite', '.sqlite3'] },
+                    }],
+                    multiple: false
+                });
+                const file = await handle.getFile();
+                await processFile(file, handle);
+                return;
+            } catch (err: any) {
+                if (err.name === 'AbortError') return;
+                console.warn("Picker failed, falling back to standard input", err);
+            }
         }
+
+        // Fallback: Standard File Input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.db,.sqlite,.sqlite3';
+        input.onchange = async (e: any) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                await processFile(file);
+            }
+        };
+        input.click();
+    };
+
+    const disconnectLocalFile = async () => {
+        setFileHandle(null);
+        setFilePermissionGranted(false);
+        await indexedDB.setFileHandle(null);
     };
 
     const resetDatabase = useCallback(async () => {
@@ -361,13 +478,13 @@ function useDatabase() {
         }
     }, []);
 
-    return { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, fileHandle };
+    return { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted };
 }
 
 type View = 'calendar' | 'gradebook' | 'journal' | 'criteria' | 'competences' | 'key-competences' | 'descriptors' | 'statistics';
 
 const App = () => {
-    const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, fileHandle } = useDatabase();
+    const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted } = useDatabase();
     
     // --- UI State ---
     const [activeClassId, setActiveClassId] = useState<string>('');
@@ -694,7 +811,10 @@ const App = () => {
                 resetDatabase={resetDatabase}
                 onSaveToLocalFile={saveToLocalFile}
                 onOpenLocalFile={openLocalFile}
+                onDisconnectLocalFile={disconnectLocalFile}
+                onRequestFilePermission={requestFilePermission}
                 localFileName={fileHandle?.name || null}
+                filePermissionGranted={filePermissionGranted}
             />
 
             <ExportModal

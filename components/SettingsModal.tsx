@@ -41,7 +41,10 @@ interface SettingsModalProps {
     // New props for File System Access API
     onSaveToLocalFile: () => Promise<void>;
     onOpenLocalFile: () => Promise<void>;
+    onDisconnectLocalFile: () => Promise<void>;
+    onRequestFilePermission: () => Promise<boolean>;
     localFileName: string | null;
+    filePermissionGranted: boolean;
 }
 
 type SettingsView = 'classes' | 'schedule' | 'courses' | 'academicConfig' | 'curriculum' | 'planner' | 'evaluationTools' | 'backup';
@@ -937,7 +940,7 @@ const AcademicConfigManager: React.FC<{
 };
 
 // ... (BackupManager component updated below) ...
-const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, onOpenExportModal, onSaveToLocalFile, onOpenLocalFile, localFileName }) => {
+const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, onOpenExportModal, onSaveToLocalFile, onOpenLocalFile, onDisconnectLocalFile, onRequestFilePermission, localFileName, filePermissionGranted }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => fileInputRef.current?.click();
@@ -950,21 +953,37 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const handleExportClick = () => {
+    const handleExportClick = async () => {
         const data = exportDatabase();
-        if (data) {
-            const blob = new Blob([data], { type: 'application/x-sqlite3' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 100);
+        if (!data) return;
+
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await (window as any).showSaveFilePicker({
+                    suggestedName: `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`,
+                    types: [{
+                        description: 'SQLite Database',
+                        accept: { 'application/x-sqlite3': ['.db', '.sqlite', '.sqlite3'] },
+                    }],
+                });
+                const writable = await handle.createWritable();
+                await writable.write(data);
+                await writable.close();
+                return;
+            } catch (err: any) {
+                if (err.name === 'AbortError') return;
+                console.error("Picker failed, falling back to download", err);
+            }
         }
+
+        // Fallback for browsers without showSaveFilePicker
+        const blob = new Blob([data], { type: 'application/x-sqlite3' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     const isFSAASupported = 'showOpenFilePicker' in window;
@@ -982,14 +1001,17 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                             Modo Archivo Local (Sincronización)
                         </h4>
                         <p className="text-sm text-indigo-700 mt-1">
-                            Abre un archivo directamente desde tu disco duro (ej. en tu carpeta de Dropbox/Drive). 
-                            La aplicación guardará los cambios automáticamente en ese archivo.
+                            Vincula la aplicación a un archivo .db en tu ordenador. 
+                            Los cambios se guardarán automáticamente en ese archivo.
                         </p>
                     </div>
                     {localFileName && (
-                        <span className="bg-indigo-200 text-indigo-800 text-xs font-semibold px-2 py-1 rounded-full border border-indigo-300">
-                            Conectado: {localFileName}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                            <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${filePermissionGranted ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
+                                {filePermissionGranted ? 'Sincronización Activa' : 'Permiso Requerido'}
+                            </span>
+                            <span className="text-[10px] text-indigo-600 font-medium">{localFileName}</span>
+                        </div>
                     )}
                 </div>
 
@@ -997,22 +1019,54 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                     <div className="text-sm text-amber-800 bg-amber-50 p-3 rounded-md border border-amber-200 mt-3 space-y-2">
                          <p className="font-bold">⚠️ Esta función requiere un navegador compatible.</p>
                          <p>Firefox y Safari bloquean el acceso directo al sistema de archivos por seguridad. Para usar la sincronización automática, debes usar <strong>Chrome, Edge o Opera</strong> en un ordenador.</p>
-                         <p className="text-xs mt-1 italic">Si no puedes cambiar de navegador, utiliza los botones de "Exportar/Importar Copia" de abajo manualmente.</p>
                     </div>
                 ) : (
-                    <div className="mt-4 flex gap-3">
-                         <button 
-                            onClick={onOpenLocalFile} 
-                            className={`flex-1 py-2 rounded-md font-medium shadow-sm transition-colors ${localFileName ? 'bg-white text-indigo-700 border border-indigo-300 hover:bg-indigo-100' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                        >
-                            {localFileName ? 'Cambiar Archivo Local' : 'Abrir Archivo Existente'}
-                        </button>
-                        <button 
-                            onClick={onSaveToLocalFile} 
-                            className="flex-1 bg-white text-indigo-700 border border-indigo-300 py-2 rounded-md hover:bg-indigo-100 transition-colors shadow-sm font-medium"
-                        >
-                            Crear Nuevo Archivo
-                        </button>
+                    <div className="mt-4 space-y-3">
+                        {localFileName ? (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                {!filePermissionGranted && (
+                                    <button 
+                                        onClick={onRequestFilePermission} 
+                                        className="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors shadow-sm font-medium text-sm"
+                                    >
+                                        Re-conectar y Dar Permiso
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={onDisconnectLocalFile} 
+                                    className="flex-1 bg-white text-red-600 border border-red-200 py-2 rounded-md hover:bg-red-50 transition-colors shadow-sm font-medium text-sm"
+                                >
+                                    Desvincular Archivo
+                                </button>
+                                <button 
+                                    onClick={onOpenLocalFile} 
+                                    className="flex-1 bg-white text-indigo-700 border border-indigo-300 py-2 rounded-md hover:bg-indigo-100 transition-colors shadow-sm font-medium text-sm"
+                                >
+                                    Cambiar Archivo
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={onOpenLocalFile} 
+                                    className="flex-1 bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                                >
+                                    Abrir y Vincular Archivo
+                                </button>
+                                <button 
+                                    onClick={onSaveToLocalFile} 
+                                    className="flex-1 bg-white text-indigo-700 border border-indigo-300 py-2 rounded-md hover:bg-indigo-100 transition-colors shadow-sm font-medium"
+                                >
+                                    Crear Nuevo y Vincular
+                                </button>
+                            </div>
+                        )}
+                        
+                        {localFileName && !filePermissionGranted && (
+                            <p className="text-[11px] text-indigo-600 italic bg-white/50 p-2 rounded border border-indigo-100">
+                                * Por seguridad, el navegador pide permiso de escritura cada vez que abres la aplicación. Haz clic en "Re-conectar" para habilitar el autoguardado.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
@@ -1029,7 +1083,7 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                 <div className="p-4 border rounded-lg bg-green-50 border-green-200">
                     <h4 className="font-bold text-green-800 mb-2">Importar Copia Manual</h4>
                     <p className="text-sm text-green-700 mb-4">Sube un archivo .db para restaurar tus datos (reemplaza lo actual).</p>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".db,.sqlite" className="hidden" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".db,.sqlite,.sqlite3" className="hidden" />
                     <button onClick={handleImportClick} className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors shadow-sm font-medium">
                         Subir Archivo (.db)
                     </button>

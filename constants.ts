@@ -109,3 +109,5 @@ export const INITIAL_ACADEMIC_CONFIGURATION: AcademicConfiguration = {
     ],
     passingGrade: 5
 };
+
+export const PALETTE_COLORS = ['#89b0f3', '#7dd7b2', '#fde28a', '#f472b6', '#b6a3f9', '#ef4444'];

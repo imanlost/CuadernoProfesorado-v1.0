@@ -3,23 +3,26 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { CalendarEvent } from './CalendarView'; 
 import { BookOpenIcon } from './Icons';
+import { PALETTE_COLORS } from '../constants';
 
 interface SessionActionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCancelSession: (classId: string, date: Date) => void;
-  onUpdateSession: (unitId: string, sessionNumber: number, description: string) => void;
+  onUpdateSession: (unitId: string, sessionNumber: number, description: string, color?: string) => void;
   onInsertAndDisplaceSession: (unitId: string, sessionNumber: number, description: string) => void;
   event: CalendarEvent | null;
 }
 
 const SessionActionModal: React.FC<SessionActionModalProps> = ({ isOpen, onClose, onCancelSession, onUpdateSession, onInsertAndDisplaceSession, event }) => {
     const [journalNote, setJournalNote] = useState('');
+    const [selectedColor, setSelectedColor] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         if (event) {
             // Load the journal note if exists, otherwise empty (to encourage "real" logging)
             setJournalNote(event.journalNote || '');
+            setSelectedColor(event.color);
         }
     }, [event]);
 
@@ -27,7 +30,7 @@ const SessionActionModal: React.FC<SessionActionModalProps> = ({ isOpen, onClose
 
     const handleSaveJournalNote = () => {
         if (event?.unitId && event?.sessionNumber) {
-            onUpdateSession(event.unitId, event.sessionNumber, journalNote);
+            onUpdateSession(event.unitId, event.sessionNumber, journalNote, selectedColor);
             onClose();
         }
     };
@@ -73,15 +76,43 @@ const SessionActionModal: React.FC<SessionActionModalProps> = ({ isOpen, onClose
                 </div>
 
                 {/* Editable Journal Entry */}
-                <div className="space-y-2">
-                    <label htmlFor="journal-note-edit" className="block text-sm font-medium text-slate-700">Anotaciones del Diario (Lo Realizado)</label>
-                    <textarea
-                        id="journal-note-edit"
-                        value={journalNote}
-                        onChange={(e) => setJournalNote(e.target.value)}
-                        className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[150px] text-sm"
-                        placeholder="Escribe aquí lo que realmente se hizo en clase, incidencias, tareas, etc..."
-                    />
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-slate-700">Color de la Sesión (Opcional)</label>
+                        <div className="flex flex-wrap gap-2">
+                            {PALETTE_COLORS.map(color => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    onClick={() => setSelectedColor(color === selectedColor ? undefined : color)}
+                                    className={`w-8 h-8 rounded-full border-2 transition-all transform hover:scale-110 ${selectedColor === color ? 'border-blue-500 ring-2 ring-blue-300 scale-110 shadow-md' : 'border-white shadow-sm'}`}
+                                    style={{ backgroundColor: color }}
+                                    title={`Marcar sesión con este color`}
+                                />
+                            ))}
+                            {selectedColor && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedColor(undefined)}
+                                    className="px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-full transition-colors"
+                                >
+                                    Limpiar color
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="journal-note-edit" className="block text-sm font-medium text-slate-700">Anotaciones del Diario (Lo Realizado)</label>
+                        <textarea
+                            id="journal-note-edit"
+                            value={journalNote}
+                            onChange={(e) => setJournalNote(e.target.value)}
+                            className="w-full p-3 border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[150px] text-sm"
+                            placeholder="Escribe aquí lo que realmente se hizo en clase, incidencias, tareas, etc..."
+                        />
+                    </div>
+                    
                     <div className="flex justify-end">
                         <button onClick={handleSaveJournalNote} className="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 shadow-sm transition-colors">
                             Guardar en el Diario

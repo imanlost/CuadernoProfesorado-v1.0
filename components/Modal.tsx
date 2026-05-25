@@ -7,36 +7,51 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+  resizable?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'lg' }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'lg', resizable = true }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [sizeDimensions, setSizeDimensions] = useState<{ width: number | string; height: number | string }>({ width: 'auto', height: 'auto' });
   const dragStartPos = useRef({ x: 0, y: 0 });
+  const resizeStartPos = useRef({ x: 0, y: 0 });
+  const resizeStartSize = useRef({ width: 0, height: 0 });
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Reset position when modal opens
+  // Reset position and size when modal opens
   useEffect(() => {
     if (isOpen) {
       setPosition({ x: 0, y: 0 });
+      setSizeDimensions({ width: 'auto', height: 'auto' });
     }
   }, [isOpen]);
 
-  // Handle global mouse events for dragging
+  // Handle global mouse events for dragging and resizing
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const dx = e.clientX - dragStartPos.current.x;
-      const dy = e.clientY - dragStartPos.current.y;
-      setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-      dragStartPos.current = { x: e.clientX, y: e.clientY };
+      if (isDragging) {
+        const dx = e.clientX - dragStartPos.current.x;
+        const dy = e.clientY - dragStartPos.current.y;
+        setPosition(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+      } else if (isResizing) {
+        const dx = e.clientX - resizeStartPos.current.x;
+        const dy = e.clientY - resizeStartPos.current.y;
+        setSizeDimensions({
+          width: Math.max(300, resizeStartSize.current.width + dx),
+          height: Math.max(200, resizeStartSize.current.height + dy)
+        });
+      }
     };
 
     const handleMouseUp = () => {
       setIsDragging(false);
+      setIsResizing(false);
     };
 
-    if (isDragging) {
+    if (isDragging || isResizing) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
@@ -45,12 +60,21 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, isResizing]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only allow dragging from the header area
     setIsDragging(true);
     dragStartPos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsResizing(true);
+    resizeStartPos.current = { x: e.clientX, y: e.clientY };
+    if (modalRef.current) {
+        const rect = modalRef.current.getBoundingClientRect();
+        resizeStartSize.current = { width: rect.width, height: rect.height };
+    }
   };
 
   if (!isOpen) return null;
@@ -67,13 +91,17 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
 
   return (
     <div 
-      className="fixed inset-0 bg-black/10 z-50 flex justify-center items-center overflow-hidden"
+      className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center overflow-hidden"
       onClick={onClose}
     >
       <div 
         ref={modalRef}
-        className={`bg-white rounded-xl shadow-2xl w-full m-4 relative flex flex-col max-h-[90vh] ${sizeClasses[size]}`}
-        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+        className={`bg-white rounded-xl shadow-2xl w-full m-4 relative flex flex-col max-h-[90vh] ${sizeClasses[size]} ${resizable ? 'resize' : ''}`}
+        style={{ 
+            transform: `translate(${position.x}px, ${position.y}px)`,
+            width: sizeDimensions.width,
+            height: sizeDimensions.height
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div 
@@ -90,9 +118,22 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
             </svg>
           </button>
         </div>
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto flex-grow">
           {children}
         </div>
+        
+        {resizable && (
+            <div 
+                className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1 text-slate-300 hover:text-slate-500 transition-colors"
+                onMouseDown={handleResizeMouseDown}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="2" y2="22"></line>
+                    <line x1="22" y1="9" x2="9" y2="22"></line>
+                    <line x1="22" y1="16" x2="16" y2="22"></line>
+                </svg>
+            </div>
+        )}
       </div>
     </div>
   );

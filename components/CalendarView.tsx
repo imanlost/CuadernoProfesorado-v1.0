@@ -276,7 +276,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
                         courseId: currentUnitObj.courseId,
                         classId: classData.id,
                         className: classData.name,
-                        color: detail.color,
+                        color: journalEntry?.color || detail.color,
                         courseColor: courseColor,
                         periodIndex: slot.periodIndex,
                         periodName: periods[slot.periodIndex] || `Periodo ${slot.periodIndex + 1}`,
@@ -379,7 +379,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
         }
     };
 
-    const handleUpdateSessionDescription = (unitId: string, sessionNumber: number, newDescription: string) => {
+    const handleUpdateSessionDescription = (unitId: string, sessionNumber: number, newDescription: string, color?: string) => {
         // Changed behavior: Editing a session in Calendar now creates/updates a Journal Entry,
         // it does NOT overwrite the original plan (ProgrammingUnit).
         if (selectedEvent) {
@@ -390,7 +390,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
                 id: existingEntry ? existingEntry.id : `j-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                 classId: selectedEvent.classId,
                 date: dateStr,
-                notes: newDescription
+                notes: newDescription,
+                color: color
             };
             
             onSaveJournalEntry(newEntry);

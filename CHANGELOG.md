@@ -1,38 +1,42 @@
-# Changelog - Cuaderno del Profesorado
+# Changelog - Cuaderno del Profesor
 
-## [2026-03-17] - Sesión Actual
-### Añadido
-- **Umbral de Aprobado Personalizable:** Implementada la posibilidad de definir una nota de corte distinta de 5.0 en Ajustes.
-- **Estadísticas Dinámicas:** El cálculo de éxito en el Cuaderno y Estadísticas de Grupo ahora utiliza el umbral configurado.
-- **Relación Numérica de Éxito:** El badge de porcentaje de aprobados ahora muestra también la relación real (ej. 17/20).
-- **Nota Informativa:** Aviso en Ajustes para sincronizar la escala de colores con el nuevo umbral de aprobado.
+## [2026-04-17] - Robustez en Gestión de Archivos (Iframe Fallback)
+- **Corregido**: Error de permisos ("Cross origin sub frames") al intentar abrir o guardar archivos en entornos de iframe (como el previsualizador de AI Studio).
+- **Añadido**: Sistema de *fallback* automático. Si el navegador bloquea el cuadro de diálogo nativo por seguridad, la aplicación ahora realiza una descarga directa estándar (para guardar) o utiliza un selector de archivos tradicional (para abrir).
+- **Mejorado**: Mayor compatibilidad del "Modo Archivo Local" en navegadores que restringen las APIs modernas de sistema de archivos.
+- **Archivos modificados**:
+    - `App.tsx`: Líneas 313-420. (Implementación de fallbacks en `saveToLocalFile` y `openLocalFile`).
 
-### Modificado
-- **Visualización de Unidades:** En el planificador, las unidades marcadas como "impartidas" ya no se tachan; ahora se muestran en un color gris suave para mejorar la legibilidad.
-- **Lógica de Colores:** La función de asignación de colores por defecto ahora respeta el umbral de aprobado configurado.
+## [2026-04-13] - Transparencia en Calificaciones y Desglose de Notas
+- **Añadido**: Nuevo modal de "Desglose de Calificación" que muestra la fórmula matemática y el detalle de cómo se ha calculado la nota final de un alumno.
+- **Añadido**: Visualización de la media de cada categoría dentro del desglose detallado.
+- **Mejorado**: Las celdas de nota final (tanto por evaluación como final del curso) ahora son clicables para abrir el desglose.
+- **Corregido**: Sincronización de colores y notas entre el Calendario y el Diario de Clase. Se ha unificado el manejo de fechas a UTC para evitar desfases por zona horaria que hacían que los cambios parecieran "perderse".
+- **Archivos modificados**:
+    - `components/GradebookTable.tsx`: Líneas 13, 76-78, 471-481, 688-710, 772-777, 830-840.
+    - `services/gradeCalculations.ts`: Líneas 269-367.
+    - `components/Icons.tsx`: Líneas 189-201.
+    - `components/ClassJournal.tsx`: Líneas 16-27, 38-39, 48-49, 56-57, 70-71, 74-75, 84-85.
+    - `components/GradeBreakdownModal.tsx`: Nuevo archivo.
 
----
+## [2026-03-24] - Gestión de Copias de Seguridad y Persistencia
+- **Mejorado**: El botón de "Descargar Copia (.db)" ahora utiliza el cuadro de diálogo nativo del sistema para permitir elegir la ubicación y el nombre del archivo (en navegadores compatibles).
+- **Añadido**: Persistencia del archivo local vinculado. La aplicación ahora recuerda el archivo seleccionado en el "Modo Archivo Local" incluso después de recargar la página.
+- **Mejorado**: Sistema de re-conexión de archivos locales. Por seguridad del navegador, se ha añadido un botón para re-conceder permisos de escritura al archivo recordado al iniciar la sesión.
+- **Añadido**: Botón de "Desvincular Archivo" para desconectar la sincronización automática de forma segura.
+- **Mejorado**: El nombre sugerido para los backups ahora incluye la fecha actual automáticamente.
 
-## [2026-02-01 a 2026-03-16] - Mejoras Consolidadas
-### Evaluación LOMLOE
-- **Gestión de Recuperaciones:** Lógica para tareas que sobreescriben o promedian notas de criterios.
-- **Herramientas de Evaluación:** Integración de Rúbricas, Listas de Cotejo y Escalas de Valoración vinculadas a criterios.
-- **Escalas de Calificación:** Sistema de "semáforos" de colores totalmente editables.
+## [2026-03-23] - Personalización de Sesiones y Mejoras en el Diario
+- **Añadido**: Posibilidad de asignar un color de una paleta predeterminada a cada sesión individual desde el Calendario o el Diario de Clase.
+- **Añadido**: Los colores de las sesiones se visualizan en la vista de mes, semana y día del calendario.
+- **Mejorado**: El Diario de Clase ahora permite seleccionar el color de la sesión directamente.
+- **Mejorado**: Sincronización bidireccional entre el Calendario y el Diario de Clase para las notas y colores de las sesiones.
+- **Corregido**: Se ha eliminado el tachado del texto en las unidades didácticas marcadas como impartidas, usando ahora un color más suave para indicar el estado.
+- **Mejorado**: En las estadísticas de éxito, ahora se muestra la relación numérica real de aprobados/total (ej. "80% (16/20)").
 
-### Planificación y Programación
-- **Planificador de Unidades (UDIs):** Definición de unidades, sesiones y vinculación con Saberes y Criterios.
-- **Calendario Inteligente:** Generación automática basada en el horario del grupo y festivos.
-- **Diario de Clase:** Notas diarias vinculadas a sesiones específicas.
-
-### Análisis de Datos
-- **Logro de Competencias:** Paneles de consecución de Competencias Específicas y Clave.
-- **Distribución de Notas:** Gráficos de barras para análisis de rendimiento grupal.
-
-### Usabilidad y UX
-- **Modo Spreadsheet:** Entrada rápida de notas con teclado.
-- **Etiquetas ACNEAE:** Sistema personalizable para atención a la diversidad.
-- **Diseño Adaptativo:** Optimización para tablets y ordenadores de aula.
-
-### Gestión de Datos
-- **Importación/Exportación:** Soporte CSV para alumnos, criterios y saberes.
-- **Copia de Seguridad:** Exportación a archivo local de la base de datos SQLite.
+## [2026-02-xx] - Versión Inicial y Mejoras de Febrero
+- Implementación del Calendario dinámico con programación de unidades.
+- Gestión de Unidades Didácticas y Saberes Básicos.
+- Diario de Clase integrado con la programación.
+- Sistema de evaluación basado en criterios y competencias.
+- Soporte para ACNEAE y adaptaciones.

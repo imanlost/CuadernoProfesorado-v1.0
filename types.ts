@@ -157,6 +157,7 @@ export interface JournalEntry {
   date: string; // YYYY-MM-DD
   classId: string;
   notes: string;
+  color?: string;
 }
 
 export interface BasicKnowledge {

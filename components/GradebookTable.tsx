@@ -10,6 +10,7 @@ import { calculateAssignmentScoresForStudent, calculateEvaluationPeriodGradeForS
 import BulkGradeImportModal from './BulkGradeImportModal';
 import StudentSummaryModal from './StudentSummaryModal';
 import CopyAssignmentModal from './CopyAssignmentModal';
+import GradeBreakdownModal from './GradeBreakdownModal';
 
 
 interface GradebookTableProps {
@@ -33,9 +34,9 @@ const getGradeStyleClasses = (grade: number | null, config?: AcademicConfigurati
 };
 
 const toYYYYMMDD = (date: Date): string => {
-    const y = date.getFullYear();
-    const m = date.getMonth() + 1;
-    const d = date.getDate();
+    const y = date.getUTCFullYear();
+    const m = date.getUTCMonth() + 1;
+    const d = date.getUTCDate();
     return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 };
 
@@ -73,6 +74,10 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
 
   // State for Copy Assignment Modal
   const [assignmentToCopy, setAssignmentToCopy] = useState<Assignment | null>(null);
+
+  // State for Grade Breakdown Modal
+  const [breakdownData, setBreakdownData] = useState<{ student: Student; period: EvaluationPeriod | { id: 'final'; name: string } } | null>(null);
+  const [isBreakdownModalOpen, setIsBreakdownModalOpen] = useState(false);
 
   // Auto-select the current period based on date
   useEffect(() => {
@@ -470,6 +475,17 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       }
   };
 
+  const handleOpenBreakdown = (student: Student, periodId: string) => {
+      const period = periodId === 'final' 
+        ? { id: 'final' as const, name: 'Final del Curso' }
+        : evaluationPeriods.find(p => p.id === periodId);
+      
+      if (period) {
+          setBreakdownData({ student, period });
+          setIsBreakdownModalOpen(true);
+      }
+  };
+
   // Prepare sorted list of classes for tabs
   const sortedAcademicClasses = useMemo(() => {
       const academicCourseIds = new Set(allCourses.filter(c => c.type !== 'other').map(c => c.id));
@@ -688,9 +704,22 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                   <>
                     {evaluationPeriods.map(p => {
                        const periodGrade = studentPeriodGrades.get(student.id)?.get(p.id);
-                       return <td key={p.id} className={`p-2 text-center font-bold text-base ${periodGrade?.styleClasses}`}>{periodGrade?.grade?.toFixed(2) ?? '-'}</td>
+                       return (
+                        <td 
+                            key={p.id} 
+                            onClick={() => handleOpenBreakdown(student, p.id)}
+                            className={`p-2 text-center font-bold text-base cursor-pointer hover:ring-2 hover:ring-inset hover:ring-blue-400 transition-all ${periodGrade?.styleClasses}`}
+                        >
+                            {periodGrade?.grade?.toFixed(2) ?? '-'}
+                        </td>
+                       );
                     })}
-                    <td className={`p-2 text-center font-extrabold text-lg ${studentOverallFinalGrades.get(student.id)?.styleClasses}`}>{studentOverallFinalGrades.get(student.id)?.grade}</td>
+                    <td 
+                        onClick={() => handleOpenBreakdown(student, 'final')}
+                        className={`p-2 text-center font-extrabold text-lg cursor-pointer hover:ring-2 hover:ring-inset hover:ring-amber-400 transition-all ${studentOverallFinalGrades.get(student.id)?.styleClasses}`}
+                    >
+                        {studentOverallFinalGrades.get(student.id)?.grade}
+                    </td>
                   </>
                 ) : (
                   <>
@@ -740,7 +769,10 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                         )
                       })
                     })}
-                    <td className={`p-2 text-center font-bold text-base bg-slate-100 border-l ${studentPeriodGrades.get(student.id)?.get(activePeriodId)?.styleClasses}`}>
+                    <td 
+                        onClick={() => handleOpenBreakdown(student, activePeriodId)}
+                        className={`p-2 text-center font-bold text-base bg-slate-100 border-l cursor-pointer hover:ring-2 hover:ring-inset hover:ring-blue-400 transition-all ${studentPeriodGrades.get(student.id)?.get(activePeriodId)?.styleClasses}`}
+                    >
                       {studentPeriodGrades.get(student.id)?.get(activePeriodId)?.grade?.toFixed(2) ?? '-'}
                     </td>
                   </>
@@ -798,6 +830,17 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       {activeCategory && <AssignmentModal isOpen={isAssignmentModalOpen} onClose={() => setIsAssignmentModalOpen(false)} onSave={handleSaveAssignment} assignmentToEdit={assignmentToEdit} category={activeCategory} criteria={criteria} specificCompetences={specificCompetences} keyCompetences={keyCompetences} programmingUnits={programmingUnits} evaluationPeriods={evaluationPeriods} academicConfiguration={academicConfiguration} evaluationTools={evaluationTools} allAssignments={classData.assignments} allCategories={classData.categories} />}
       <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSave={handleSaveCategory} categoryToEdit={categoryToEdit} evaluationPeriodId={activePeriodId} />
       {gradeEntryData && <GradeEntryModal isOpen={isGradeEntryModalOpen} onClose={() => setIsGradeEntryModalOpen(false)} student={gradeEntryData.student} assignment={gradeEntryData.assignment} grade={gradeEntryData.grade} criteriaList={criteria} onSave={handleSaveGrade} evaluationTools={evaluationTools} allAssignments={classData.assignments} students={classData.students} />}
+      {breakdownData && (
+          <GradeBreakdownModal 
+            isOpen={isBreakdownModalOpen} 
+            onClose={() => setIsBreakdownModalOpen(false)} 
+            student={breakdownData.student} 
+            classData={classData} 
+            period={breakdownData.period} 
+            academicConfiguration={academicConfiguration} 
+            onStudentChange={(newStudent) => setBreakdownData({ ...breakdownData, student: newStudent })}
+          />
+      )}
       {assignmentForImport && <BulkGradeImportModal isOpen={isBulkImportModalOpen} onClose={() => setIsBulkImportModalOpen(false)} onSave={handleBulkSaveGrades} assignment={assignmentForImport} students={classData.students} />}
       {selectedStudentForSummary && (
           <StudentSummaryModal
