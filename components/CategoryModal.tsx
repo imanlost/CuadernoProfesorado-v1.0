@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Category } from '../types';
+import type { Category, EvaluationPeriod } from '../types';
 import Modal from './Modal';
 
 interface CategoryModalProps {
@@ -8,28 +8,36 @@ interface CategoryModalProps {
   onSave: (category: Category, evaluationPeriodId: string) => void;
   categoryToEdit: Category | null;
   evaluationPeriodId: string;
+  evaluationPeriods?: EvaluationPeriod[];
 }
 
-const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, categoryToEdit, evaluationPeriodId }) => {
+const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, categoryToEdit, evaluationPeriodId, evaluationPeriods = [] }) => {
   const [name, setName] = useState('');
   const [weight, setWeight] = useState<number | ''>('');
-  const [type, setType] = useState<'normal' | 'recovery'>('normal');
+  const [type, setType] = useState<'normal' | 'recovery' | 'period_recovery'>('normal');
+  const [recoversEvaluationPeriodIds, setRecoversEvaluationPeriodIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (categoryToEdit) {
       setName(categoryToEdit.name);
       setWeight(categoryToEdit.weight);
       setType(categoryToEdit.type || 'normal');
+      setRecoversEvaluationPeriodIds(categoryToEdit.recoversEvaluationPeriodIds || []);
     } else {
       setName('');
       setWeight('');
       setType('normal');
+      setRecoversEvaluationPeriodIds([]);
     }
-  }, [categoryToEdit, isOpen]);
+  }, [categoryToEdit, isOpen, evaluationPeriods]);
 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (type === 'period_recovery' && recoversEvaluationPeriodIds.length === 0) {
+        alert("Por favor, selecciona al menos una evaluación a recuperar.");
+        return;
+    }
     if (name && weight !== '' && weight >= 0 && weight <= 100) {
       onSave({
         id: categoryToEdit ? categoryToEdit.id : `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
@@ -37,6 +45,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, 
         weight: Number(weight),
         evaluationPeriodId: categoryToEdit ? categoryToEdit.evaluationPeriodId : evaluationPeriodId,
         type,
+        recoversEvaluationPeriodIds: type === 'period_recovery' ? recoversEvaluationPeriodIds : undefined,
       }, evaluationPeriodId);
       onClose();
     } else {
@@ -64,18 +73,79 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, 
           />
         </div>
         <div>
-          <label className="flex items-center space-x-2 cursor-pointer mt-2">
-            <input
-              type="checkbox"
-              checked={type === 'recovery'}
-              onChange={(e) => setType(e.target.checked ? 'recovery' : 'normal')}
-              className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm font-medium text-slate-700">Es una categoría de recuperación</span>
-          </label>
-          <p className="text-xs text-slate-500 mt-1 pl-6">
-            Las notas de las tareas en esta categoría reemplazarán las notas anteriores de los criterios evaluados en este período.
-          </p>
+           <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de Categoría</label>
+           <div className="flex flex-col space-y-2">
+             <label className="flex items-center space-x-2 cursor-pointer">
+               <input
+                 type="radio"
+                 name="categoryType"
+                 checked={type === 'normal'}
+                 onChange={() => setType('normal')}
+                 className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+               />
+               <span className="text-sm font-medium text-slate-700">Normal</span>
+             </label>
+             
+             {evaluationPeriodId !== 'final' && (
+               <label className="flex items-center space-x-2 cursor-pointer">
+                 <input
+                   type="radio"
+                   name="categoryType"
+                   checked={type === 'recovery'}
+                   onChange={() => setType('recovery')}
+                   className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                 />
+                 <span className="text-sm font-medium text-slate-700">Recuperación de Tareas</span>
+               </label>
+             )}
+
+             {(evaluationPeriodId === 'final' || type === 'period_recovery') && (
+               <label className="flex items-center space-x-2 cursor-pointer">
+                 <input
+                   type="radio"
+                   name="categoryType"
+                   checked={type === 'period_recovery'}
+                   onChange={() => setType('period_recovery')}
+                   className="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                 />
+                 <span className="text-sm font-medium text-slate-700">Recuperación de Evaluación</span>
+               </label>
+             )}
+           </div>
+
+          {type === 'recovery' && (
+            <p className="text-xs text-slate-500 mt-2 p-2 bg-slate-50 rounded border border-slate-200">
+              Las notas de las tareas en esta categoría reemplazarán las notas anteriores de los criterios evaluados en este período.
+            </p>
+          )}
+
+          {type === 'period_recovery' && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Evaluaciones que recupera</label>
+                <div className="space-y-2">
+                    {evaluationPeriods.map(p => (
+                        <label key={p.id} className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                checked={recoversEvaluationPeriodIds.includes(p.id)}
+                                onChange={(e) => {
+                                    if (e.target.checked) setRecoversEvaluationPeriodIds(prev => [...prev, p.id]);
+                                    else setRecoversEvaluationPeriodIds(prev => prev.filter(id => id !== p.id));
+                                }}
+                                className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-slate-700">{p.name}</span>
+                        </label>
+                    ))}
+                </div>
+                {recoversEvaluationPeriodIds.length === 0 && (
+                  <p className="text-xs text-red-500 mt-2 font-medium">Por favor, selecciona al menos una evaluación.</p>
+                )}
+                <p className="text-xs text-blue-700 mt-3">
+                    La media obtenida en esta categoría reemplazará automáticamente la nota de las evaluaciones seleccionadas, pero <strong>solo en caso de que sea superior</strong>.
+                </p>
+            </div>
+          )}
         </div>
         <div className="flex justify-end pt-4 space-x-2 border-t mt-4">
           <button type="button" onClick={onClose} className="bg-white py-2 px-4 border border-slate-300 rounded-lg shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
