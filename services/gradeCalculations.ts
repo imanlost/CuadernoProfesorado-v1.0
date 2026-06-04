@@ -368,15 +368,50 @@ export const calculateDetailedPeriodGradeBreakdown = (studentId: string, classDa
 export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
     const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;
     
+    // Calculate period recovery grades from categories in the 'final' period
+    const finalRecoveryCategories = classData.categories.filter(c => c.evaluationPeriodId === 'final' && c.type === 'period_recovery' && c.recoversEvaluationPeriodIds && c.recoversEvaluationPeriodIds.length > 0);
+    
+    const periodRecoveryMap = new Map<string, number>();
+    
+    finalRecoveryCategories.forEach(cat => {
+        const assignments = classData.assignments.filter(a => a.categoryId === cat.id);
+        const scores: number[] = [];
+        assignments.forEach(a => {
+            const grade = classData.grades.find(g => g.studentId === studentId && g.assignmentId === a.id);
+            const score = calculateSingleAssignmentScore(a, grade);
+            if (score !== null) scores.push(score);
+        });
+        if (scores.length > 0) {
+            const avg = scores.reduce((sum, val) => sum + val, 0) / scores.length;
+            cat.recoversEvaluationPeriodIds!.forEach(periodId => {
+                const existing = periodRecoveryMap.get(periodId);
+                if (existing === undefined || avg > existing) {
+                    periodRecoveryMap.set(periodId, avg);
+                }
+            });
+        }
+    });
+
     let totalWeightUsed = 0;
     let weightedSum = 0;
 
     evaluationPeriods.forEach(period => {
-        const periodGradeResult = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id, gradeScale, passingGrade);
+        let periodGrade = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id, gradeScale, passingGrade).grade;
+        
+        // Apply period recovery if it exists and is higher
+        if (periodRecoveryMap.has(period.id)) {
+            const recoveryGrade = periodRecoveryMap.get(period.id)!;
+            if (periodGrade !== null) {
+                periodGrade = Math.max(periodGrade, recoveryGrade);
+            } else {
+                periodGrade = recoveryGrade;
+            }
+        }
+
         const periodWeight = evaluationPeriodWeights[period.id];
 
-        if (periodGradeResult.grade !== null && periodWeight !== undefined && periodWeight !== null) {
-            weightedSum += periodGradeResult.grade * periodWeight;
+        if (periodGrade !== null && periodWeight !== undefined && periodWeight !== null) {
+            weightedSum += periodGrade * periodWeight;
             totalWeightUsed += periodWeight;
         }
     });

@@ -45,7 +45,8 @@ export interface Category {
   name: string;
   weight: number;
   evaluationPeriodId: string;
-  type?: 'normal' | 'recovery';
+  type?: 'normal' | 'recovery' | 'period_recovery';
+  recoversEvaluationPeriodIds?: string[];
 }
 
 // --- Tipos de Instrumentos de Evaluación ---

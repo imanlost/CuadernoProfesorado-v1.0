@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal';
-import type { Student, Assignment, Grade, EvaluationCriterion, EvaluationTool, Rubric } from '../types';
+import type { Student, Assignment, Grade, EvaluationCriterion, EvaluationTool, Rubric, Category } from '../types';
 import { calculateToolGlobalScore } from '../services/gradeCalculations';
 import { ChevronRightIcon } from './Icons';
 
@@ -12,14 +12,15 @@ interface GradeEntryModalProps {
   assignment: Assignment;
   grade: Grade | null;
   criteriaList: EvaluationCriterion[];
-  onSave: (studentId: string, assignmentId: string, data: { criterionScores: Record<string, number | null> } | { toolResults: Record<string, boolean | string> }, nextStudent?: boolean) => void;
+  onSave: (studentId: string, assignmentId: string, data: { criterionScores?: Record<string, number | null>, toolResults?: Record<string, boolean | string> }, nextStudent?: boolean) => void;
   evaluationTools: EvaluationTool[];
   allAssignments: Assignment[];
+  allCategories: Category[];
   students: Student[]; // Added to know the list for navigation
 }
 
 const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
-  const { isOpen, onClose, student, assignment, grade, criteriaList, onSave, evaluationTools, allAssignments, students } = props;
+  const { isOpen, onClose, student, assignment, grade, criteriaList, onSave, evaluationTools, allAssignments, allCategories, students } = props;
   
   const [scores, setScores] = useState<Record<string, number | null>>({});
   const [toolResults, setToolResults] = useState<Record<string, boolean | string>>({});
@@ -39,10 +40,15 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
     !!(assignment.recoversAssignmentIds && assignment.recoversAssignmentIds.length > 0)
   , [assignment]);
   
+  const isPeriodRecovery = useMemo(() => {
+    const parentCategory = allCategories.find(c => c.id === assignment.categoryId);
+    return parentCategory?.type === 'period_recovery';
+  }, [assignment, allCategories]);
+  
   useEffect(() => {
     if (isOpen) {
         if (assignment.evaluationMethod === 'direct_grade') {
-            if (isRecoveryTaskWithAssignments) {
+            if (isRecoveryTaskWithAssignments || isPeriodRecovery) {
                 const firstGradeVal = grade?.criterionScores ? Object.values(grade.criterionScores)[0] : null;
                 setSingleGrade(firstGradeVal != null ? String(firstGradeVal) : '');
                 setScores({});
@@ -116,7 +122,7 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
   const handleSaveInternal = (e: React.FormEvent, next: boolean) => {
     e.preventDefault();
     if (assignment.evaluationMethod === 'direct_grade') {
-        if (isRecoveryTaskWithAssignments) {
+        if (isRecoveryTaskWithAssignments || isPeriodRecovery) {
             const gradeValue = singleGrade !== '' ? parseFloat(singleGrade.replace(',', '.')) : null;
             const newScores: Record<string, number | null> = {};
             if (gradeValue !== null && !isNaN(gradeValue)) {
@@ -143,11 +149,13 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
   };
 
   const renderDirectGradeInputs = () => {
-    if (isRecoveryTaskWithAssignments) {
+    if (isRecoveryTaskWithAssignments || isPeriodRecovery) {
         return (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <label className="block text-sm font-medium text-slate-700">Calificación de Recuperación</label>
-                <p className="text-xs text-slate-500 mb-2">Esta nota se aplicará a todos los criterios de las tareas recuperadas.</p>
+                <p className="text-xs text-slate-500 mb-2">
+                    {isPeriodRecovery ? 'Esta nota reemplazará directamente la nota final de las evaluaciones seleccionadas.' : 'Esta nota se aplicará a todos los criterios de las tareas recuperadas.'}
+                </p>
                 <input
                     type="number" step="0.01" min="0" max="10" value={singleGrade} onChange={handleSingleGradeChange}
                     className="w-full p-2 text-lg text-center font-semibold border rounded-md" placeholder="-"/>

@@ -286,13 +286,16 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       // Reconstruct the criterionScores object. 
       // In direct mode, we apply this single value to ALL linked criteria (similar to GradeEntryModal "Calificación Única")
       const criterionScores: Record<string, number | null> = {};
+      const parentCategory = classData.categories.find(c => c.id === assignment.categoryId);
+      const isPeriodRecovery = parentCategory?.type === 'period_recovery';
+
       if (numericValue !== null) {
           assignment.linkedCriteria.forEach(lc => {
               criterionScores[lc.criterionId] = numericValue;
           });
           // Also set recovery_grade if this assignment is a recovery one (though mostly linked criteria cover it)
           // But to be safe if it's a pure recovery container:
-          if (assignment.recoversAssignmentIds && assignment.recoversAssignmentIds.length > 0) {
+          if ((assignment.recoversAssignmentIds && assignment.recoversAssignmentIds.length > 0) || isPeriodRecovery) {
               criterionScores['recovery_grade'] = numericValue;
           }
       } else {
@@ -300,6 +303,9 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
            assignment.linkedCriteria.forEach(lc => {
               criterionScores[lc.criterionId] = null;
           });
+          if ((assignment.recoversAssignmentIds && assignment.recoversAssignmentIds.length > 0) || isPeriodRecovery) {
+              criterionScores['recovery_grade'] = null;
+          }
       }
 
       // Reuse the robust save function, but without the nextStudent navigation logic
@@ -623,8 +629,36 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
               </th>
               {activePeriodId === 'final' ? (
                 <>
-                  {evaluationPeriods.map(p => <th key={p.id} className="p-3 font-semibold text-center">{p.name}</th>)}
-                  <th className="p-3 font-semibold text-center">Nota Final</th>
+                  {evaluationPeriods.map(p => <th key={p.id} className="p-3 font-semibold text-center align-middle">{p.name}</th>)}
+                  
+                  {/* Categories in Final Period */}
+                  {categoriesForPeriod.map(cat => {
+                    const assignmentsForCat = assignmentsForPeriod.filter(a => a.categoryId === cat.id);
+                    return (
+                      <th key={cat.id} colSpan={assignmentsForCat.length || 1} className="p-3 font-semibold text-center border-l border-r-2 border-r-slate-400 bg-slate-200 align-top">
+                        <div className="flex justify-center items-center">
+                            {cat.name} {cat.weight > 0 ? `(${cat.weight}%)` : ''}
+                            {cat.type === 'period_recovery' && <span className="ml-2 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full" title="Recuperación de Evaluación">REC {cat.recoversEvaluationPeriodIds?.map(id => evaluationPeriods.find(p => p.id === id)?.name).filter(Boolean).map(name => name?.replace(' Evaluación', 'ª')).join(', ')}</span>}
+                        </div>
+                        <div className="flex justify-center items-center gap-1 mt-1 font-normal normal-case">
+                            <button onClick={() => { setActiveCategory(cat); setAssignmentToEdit(null); setIsAssignmentModalOpen(true); }} className="p-1 text-blue-600 hover:bg-blue-100 rounded-md text-xs">Añadir Tarea</button>
+                            <button onClick={() => {setCategoryToEdit(cat); setIsCategoryModalOpen(true);}} className="p-1 hover:bg-slate-300 rounded-full"><PencilIcon className="w-3 h-3 text-slate-500"/></button>
+                            <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 hover:bg-slate-300 rounded-full"><TrashIcon className="w-3 h-3 text-red-500"/></button>
+                        </div>
+                      </th>
+                    )
+                  })}
+
+                  <th rowSpan={2} className="p-3 font-semibold text-center border-l bg-slate-200 align-middle relative">
+                    Nota Final
+                    <button
+                        onClick={() => { setCategoryToEdit(null); setIsCategoryModalOpen(true); }}
+                        className="absolute top-1 right-1 inline-flex items-center justify-center p-1.5 border border-transparent shadow-sm text-xs font-medium rounded-full text-white bg-amber-500 hover:bg-amber-600"
+                        title="Nueva Categoría de Recuperación"
+                    >
+                        <PlusIcon className="w-4 h-4" />
+                    </button>
+                  </th>
                 </>
               ) : (
                 <>
@@ -657,11 +691,16 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                 </>
               )}
             </tr>
-            {activePeriodId !== 'final' && (
+            {/* the second row handles assignment columns headers */}
+            {true && (
               <tr>
                 {/* Alumno Header Bottom Half: No top border, align top (visually merges with above) */}
                 <th className="px-4 py-3 sticky left-0 bg-slate-200 z-30 w-52 border-r border-slate-300 border-t-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"></th>
                 
+                {activePeriodId === 'final' && evaluationPeriods.map(p => (
+                   <th key={`bot-${p.id}`} className="p-2"></th>
+                ))}
+
                 {categoriesForPeriod.map(cat => {
                     const assignmentsForCat = assignmentsForPeriod.filter(a => a.categoryId === cat.id);
                     if (assignmentsForCat.length === 0) {
@@ -714,9 +753,57 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                         </td>
                        );
                     })}
+
+                    {categoriesForPeriod.map(cat => {
+                      const assignmentsForCat = assignmentsForPeriod.filter(a => a.categoryId === cat.id);
+                       if (assignmentsForCat.length === 0) {
+                          return <td key={`${cat.id}-empty-cell`} className="p-2 border-l border-r-2 border-r-slate-400"></td>
+                      }
+                      return assignmentsForCat.map((a, idx) => {
+                        const score = studentAssignmentScores.get(student.id)?.get(a.id);
+                        const styleClasses = getGradeColorClass(score ?? null, academicConfiguration.gradeScale);
+                        // Calculate global index for keyboard nav
+                        const globalAssignmentIndex = flattenedAssignments.findIndex(fa => fa.id === a.id);
+                        
+                        return (
+                          <td 
+                            key={a.id} 
+                            className={`p-0 border-l ${idx === assignmentsForCat.length - 1 ? 'border-r-2 border-r-slate-400' : 'border-r'} ${!isSpreadsheetMode ? styleClasses : ''}`} 
+                          >
+                             {isSpreadsheetMode && a.evaluationMethod === 'direct_grade' ? (
+                                 <input 
+                                    ref={el => {
+                                        if (el) inputRefs.current.set(`${studentIndex}-${globalAssignmentIndex}`, el);
+                                        else inputRefs.current.delete(`${studentIndex}-${globalAssignmentIndex}`);
+                                    }}
+                                    type="number"
+                                    min="0" max="10" step="0.01"
+                                    defaultValue={score !== null ? score : ''}
+                                    onBlur={(e) => handleQuickGradeUpdate(student.id, a, e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleQuickGradeUpdate(student.id, a, e.currentTarget.value);
+                                        }
+                                        handleGridKeyDown(e, studentIndex, globalAssignmentIndex);
+                                    }}
+                                    className="w-full h-full text-center p-2 focus:ring-2 focus:ring-inset focus:ring-blue-500 focus:bg-blue-50 border-0 outline-none bg-transparent font-medium"
+                                 />
+                             ) : (
+                                <div 
+                                    onClick={() => handleOpenGradeEntry(student, a)}
+                                    className={`w-full h-full p-2 text-center font-bold text-base cursor-pointer hover:bg-blue-50/50 flex items-center justify-center ${!isSpreadsheetMode ? '' : 'text-slate-400'}`}
+                                >
+                                    {score?.toFixed(2) ?? (isSpreadsheetMode && a.evaluationMethod !== 'direct_grade' ? '...' : '-')}
+                                </div>
+                             )}
+                          </td>
+                        )
+                      })
+                    })}
+
                     <td 
                         onClick={() => handleOpenBreakdown(student, 'final')}
-                        className={`p-2 text-center font-extrabold text-lg cursor-pointer hover:ring-2 hover:ring-inset hover:ring-amber-400 transition-all ${studentOverallFinalGrades.get(student.id)?.styleClasses}`}
+                        className={`p-2 border-l text-center font-extrabold text-lg cursor-pointer hover:ring-2 hover:ring-inset hover:ring-amber-400 transition-all ${studentOverallFinalGrades.get(student.id)?.styleClasses}`}
                     >
                         {studentOverallFinalGrades.get(student.id)?.grade}
                     </td>
@@ -828,8 +915,8 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
           </div>
        )}
       {activeCategory && <AssignmentModal isOpen={isAssignmentModalOpen} onClose={() => setIsAssignmentModalOpen(false)} onSave={handleSaveAssignment} assignmentToEdit={assignmentToEdit} category={activeCategory} criteria={criteria} specificCompetences={specificCompetences} keyCompetences={keyCompetences} programmingUnits={programmingUnits} evaluationPeriods={evaluationPeriods} academicConfiguration={academicConfiguration} evaluationTools={evaluationTools} allAssignments={classData.assignments} allCategories={classData.categories} />}
-      <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSave={handleSaveCategory} categoryToEdit={categoryToEdit} evaluationPeriodId={activePeriodId} />
-      {gradeEntryData && <GradeEntryModal isOpen={isGradeEntryModalOpen} onClose={() => setIsGradeEntryModalOpen(false)} student={gradeEntryData.student} assignment={gradeEntryData.assignment} grade={gradeEntryData.grade} criteriaList={criteria} onSave={handleSaveGrade} evaluationTools={evaluationTools} allAssignments={classData.assignments} students={classData.students} />}
+      <CategoryModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} onSave={handleSaveCategory} categoryToEdit={categoryToEdit} evaluationPeriodId={activePeriodId} evaluationPeriods={evaluationPeriods} />
+      {gradeEntryData && <GradeEntryModal isOpen={isGradeEntryModalOpen} onClose={() => setIsGradeEntryModalOpen(false)} student={gradeEntryData.student} assignment={gradeEntryData.assignment} grade={gradeEntryData.grade} criteriaList={criteria} onSave={handleSaveGrade} evaluationTools={evaluationTools} allAssignments={classData.assignments} allCategories={classData.categories} students={classData.students} />}
       {breakdownData && (
           <GradeBreakdownModal 
             isOpen={isBreakdownModalOpen} 

@@ -180,13 +180,13 @@ const AssignmentModal: React.FC<AssignmentModalProps> = (props) => {
       return evaluationTools.filter(tool => tool.type === evaluationMethod);
   }, [evaluationTools, evaluationMethod]);
   
-  const modalTitle = assignmentToEdit 
-    ? `Editar Tarea en '${category.name}'` 
-    : `Nueva Tarea en '${category.name}'`;
-    
-  const showCriteriaSection = category.type !== 'recovery' || recoversAssignmentIds.length === 0;
-
-  return (
+    const modalTitle = assignmentToEdit 
+      ? `Editar Tarea en '${category.name}'` 
+      : `Nueva Tarea en '${category.name}'`;
+      
+    const showCriteriaSection = category.type !== 'period_recovery' && (category.type !== 'recovery' || recoversAssignmentIds.length === 0);
+  
+    return (
     <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="3xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -395,8 +395,10 @@ const AssignmentModal: React.FC<AssignmentModalProps> = (props) => {
         )}
 
         {evaluationMethod === 'direct_grade' && !showCriteriaSection && (
-            <div className="text-sm text-center italic py-4 bg-blue-50 text-blue-800 rounded-lg">
-                La nota de esta tarea se aplicará a todos los criterios de las tareas recuperadas.
+            <div className="text-sm text-center italic py-4 bg-blue-50 text-blue-800 rounded-lg max-w-2xl mx-auto px-4 mt-4 mb-2 shadow-sm border border-blue-100">
+                {category.type === 'period_recovery' 
+                  ? 'Esta tarea evaluará la recuperación global de la evaluación. La nota introducida reemplazará directamente la nota final de las evaluaciones seleccionadas si resulta ser superior.'
+                  : 'La nota de esta tarea se aplicará automáticamente a todos los criterios de las tareas que estés recuperando.'}
             </div>
         )}
 
