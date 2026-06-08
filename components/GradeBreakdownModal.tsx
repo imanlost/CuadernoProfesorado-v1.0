@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { Student, ClassData, AcademicConfiguration, EvaluationPeriod } from '../types';
-import { calculateDetailedPeriodGradeBreakdown, getGradeColorClass } from '../services/gradeCalculations';
+import { calculateDetailedPeriodGradeBreakdown, getGradeColorClass, calculateOverallFinalGradeForStudent } from '../services/gradeCalculations';
 import Modal from './Modal';
 import { CalculatorIcon, InformationCircleIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
@@ -46,6 +46,15 @@ const GradeBreakdownModal: React.FC<GradeBreakdownModalProps> = ({ isOpen, onClo
     };
 
     if (!breakdown && period.id !== 'final') return null;
+
+    const finalCourseGrade = React.useMemo(() => {
+        if (period.id !== 'final') return null;
+        // Import and calculate overall final grade
+        const result = calculateOverallFinalGradeForStudent(student.id, classData, academicConfiguration);
+        return result.grade !== 'N/A' ? parseFloat(result.grade) : null;
+    }, [student.id, classData, period.id, academicConfiguration]);
+
+    const displayedGrade = period.id === 'final' ? finalCourseGrade : breakdown?.finalGrade;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Desglose de Calificación" size="4xl">
@@ -93,8 +102,8 @@ const GradeBreakdownModal: React.FC<GradeBreakdownModalProps> = ({ isOpen, onClo
                 <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                     <div className="flex justify-between items-center">
                         <span className="text-lg font-bold text-slate-800">Nota Final</span>
-                        <span className={`text-2xl font-black px-3 py-1 rounded-md ${getGradeColorClass(breakdown?.finalGrade ?? null, academicConfiguration.gradeScale)}`}>
-                            {breakdown?.finalGrade?.toFixed(2) ?? '-'}
+                        <span className={`text-2xl font-black px-3 py-1 rounded-md ${getGradeColorClass(displayedGrade ?? null, academicConfiguration.gradeScale)}`}>
+                            {displayedGrade?.toFixed(2) ?? '-'}
                         </span>
                     </div>
                 </div>

@@ -154,7 +154,7 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <label className="block text-sm font-medium text-slate-700">Calificación de Recuperación</label>
                 <p className="text-xs text-slate-500 mb-2">
-                    {isPeriodRecovery ? 'Esta nota reemplazará directamente la nota final de las evaluaciones seleccionadas.' : 'Esta nota se aplicará a todos los criterios de las tareas recuperadas.'}
+                    {isPeriodRecovery ? 'Esta nota reemplazará la nota final de las evaluaciones seleccionadas solo si están suspensas y esta es superior.' : 'Esta nota se aplicará a todos los criterios de las tareas recuperadas.'}
                 </p>
                 <input
                     type="number" step="0.01" min="0" max="10" value={singleGrade} onChange={handleSingleGradeChange}

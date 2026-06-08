@@ -397,7 +397,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = (props) => {
         {evaluationMethod === 'direct_grade' && !showCriteriaSection && (
             <div className="text-sm text-center italic py-4 bg-blue-50 text-blue-800 rounded-lg max-w-2xl mx-auto px-4 mt-4 mb-2 shadow-sm border border-blue-100">
                 {category.type === 'period_recovery' 
-                  ? 'Esta tarea evaluará la recuperación global de la evaluación. La nota introducida reemplazará directamente la nota final de las evaluaciones seleccionadas si resulta ser superior.'
+                  ? 'Esta tarea evaluará la recuperación global. La nota introducida reemplazará la nota final de las evaluaciones seleccionadas solo si estaban suspensas y la nota es superior.'
                   : 'La nota de esta tarea se aplicará automáticamente a todos los criterios de las tareas que estés recuperando.'}
             </div>
         )}

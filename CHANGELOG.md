@@ -1,5 +1,14 @@
 # Changelog - Cuaderno del Profesor
 
+## [2026-06-08] - Corrección Recuperación de Evaluación
+- **Corregido**: Ahora la "Recuperación de Evaluación" solo sobreescribe las notas de las evaluaciones seleccionadas si estas están **suspensas** (nota inferior al nivel de aprobado configurado) y si la nota de la recuperación es superior.
+
+## [2026-06-04] - Informes de Curso Completo y Recuperaciones de Evaluación
+- **Añadido**: Posibilidad de exportar los informes completos (criterios y competencias) para todo el "Curso Completo", sin dividirlos por evaluación (útil a final de curso).
+- **Añadido**: Nuevo tipo de categoría en el cuaderno: "Recuperación de Evaluación".
+- **Mejorado**: Las categorías de "Recuperación de Evaluación" pueden configurarse para sustituir automáticamente la nota final de una o varias evaluaciones concretas, aplicándose sola y estrictamente si la nota de recuperación es superior a la previa.
+- **Mejorado**: La inserción de nota "directa" para la categoría de "Recuperación de Evaluación" permite establecer y recuperar de un solo dato la evaluación.
+
 ## [2026-04-17] - Robustez en Gestión de Archivos (Iframe Fallback)
 - **Corregido**: Error de permisos ("Cross origin sub frames") al intentar abrir o guardar archivos en entornos de iframe (como el previsualizador de AI Studio).
 - **Añadido**: Sistema de *fallback* automático. Si el navegador bloquea el cuadro de diálogo nativo por seguridad, la aplicación ahora realiza una descarga directa estándar (para guardar) o utiliza un selector de archivos tradicional (para abrir).

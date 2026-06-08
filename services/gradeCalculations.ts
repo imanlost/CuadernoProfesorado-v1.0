@@ -398,11 +398,13 @@ export const calculateOverallFinalGradeForStudent = (studentId: string, classDat
     evaluationPeriods.forEach(period => {
         let periodGrade = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id, gradeScale, passingGrade).grade;
         
-        // Apply period recovery if it exists and is higher
+        // Apply period recovery if it exists and is higher AND original grade was failing
         if (periodRecoveryMap.has(period.id)) {
             const recoveryGrade = periodRecoveryMap.get(period.id)!;
             if (periodGrade !== null) {
-                periodGrade = Math.max(periodGrade, recoveryGrade);
+                if (periodGrade < passingGrade && recoveryGrade > periodGrade) {
+                    periodGrade = recoveryGrade;
+                }
             } else {
                 periodGrade = recoveryGrade;
             }

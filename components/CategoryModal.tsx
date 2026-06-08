@@ -142,7 +142,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, onSave, 
                   <p className="text-xs text-red-500 mt-2 font-medium">Por favor, selecciona al menos una evaluación.</p>
                 )}
                 <p className="text-xs text-blue-700 mt-3">
-                    La media obtenida en esta categoría reemplazará automáticamente la nota de las evaluaciones seleccionadas, pero <strong>solo en caso de que sea superior</strong>.
+                    La media obtenida en esta categoría reemplazará automáticamente la nota de las evaluaciones seleccionadas, pero <strong>solo en las evaluaciones suspensas (nota menor al aprobado) y si la nota de recuperación es superior</strong>.
                 </p>
             </div>
           )}
