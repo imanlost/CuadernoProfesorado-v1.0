@@ -20,10 +20,10 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
     const studentCompetenceGrades = useMemo(() => {
         const studentGrades = new Map<string, Map<string, number | null>>();
         for (const student of classData.students) {
-            studentGrades.set(student.id, calculateStudentCompetenceGrades(student.id, classData, criteria, competences, selectedPeriodId === 'all' ? undefined : selectedPeriodId));
+            studentGrades.set(student.id, calculateStudentCompetenceGrades(student.id, classData, criteria, competences, academicConfiguration, selectedPeriodId === 'all' ? undefined : selectedPeriodId));
         }
         return studentGrades;
-    }, [classData, criteria, competences, selectedPeriodId]);
+    }, [classData, criteria, competences, selectedPeriodId, academicConfiguration]);
 
     const descriptorToKeyCompetenceMap = useMemo(() => {
         const map = new Map<string, KeyCompetence>();
@@ -53,7 +53,7 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
         const finalGrade = studentCompetenceGrades.get(student.id)?.get(competence.id) ?? null;
     
         const criteriaForCompetence = criteria.filter(c => c.competenceId === competence.id);
-        const studentCriterionGrades = calculateStudentCriterionGrades(student.id, classData, criteriaForCompetence, selectedPeriodId === 'all' ? undefined : selectedPeriodId);
+        const studentCriterionGrades = calculateStudentCriterionGrades(student.id, classData, criteriaForCompetence, academicConfiguration, selectedPeriodId === 'all' ? undefined : selectedPeriodId);
     
         const items = criteriaForCompetence.map(criterion => ({
             name: `Criterio ${criterion.code}`,

@@ -1,5 +1,8 @@
 # Changelog - Cuaderno del Profesor
 
+## [2026-06-08] - Inyección de Recuperaciones Globales en Criterios
+- **Mejorado**: Ahora la nota de una categoría de "Recuperación de Evaluación" no solo reemplaza la media final del periodo suspenso, sino que se proyecta e inyecta directamente hacia abajo en *todos los criterios de evaluación* (y por ende competencias) trabajados en las tareas de dicho periodo, superando la nota si la de recuperación es mayor. Evita tener que replicar tareas a mano.
+
 ## [2026-06-08] - Corrección Recuperación de Evaluación
 - **Corregido**: Ahora la "Recuperación de Evaluación" solo sobreescribe las notas de las evaluaciones seleccionadas si estas están **suspensas** (nota inferior al nivel de aprobado configurado) y si la nota de la recuperación es superior.
 

@@ -282,12 +282,12 @@ interface CompetencesTabProps {
 const CompetencesTab: React.FC<CompetencesTabProps> = ({ student, classData, criteria, specificCompetences, keyCompetences, academicConfiguration }) => {
     
     const kcGrades = useMemo(() => 
-        calculateStudentKeyCompetenceGrades(student.id, classData, criteria, specificCompetences, keyCompetences),
-    [student.id, classData, criteria, specificCompetences, keyCompetences]);
+        calculateStudentKeyCompetenceGrades(student.id, classData, criteria, specificCompetences, keyCompetences, academicConfiguration),
+    [student.id, classData, criteria, specificCompetences, keyCompetences, academicConfiguration]);
 
     const scGrades = useMemo(() => 
-        calculateStudentCompetenceGrades(student.id, classData, criteria, specificCompetences),
-    [student.id, classData, criteria, specificCompetences]);
+        calculateStudentCompetenceGrades(student.id, classData, criteria, specificCompetences, academicConfiguration),
+    [student.id, classData, criteria, specificCompetences, academicConfiguration]);
 
     return (
         <div className="space-y-8">
@@ -360,8 +360,8 @@ interface CriteriaTabProps {
 
 const CriteriaTab: React.FC<CriteriaTabProps> = ({ student, classData, criteria, specificCompetences, academicConfiguration }) => {
     const grades = useMemo(() => 
-        calculateStudentCriterionGrades(student.id, classData, criteria),
-    [student.id, classData, criteria]);
+        calculateStudentCriterionGrades(student.id, classData, criteria, academicConfiguration),
+    [student.id, classData, criteria, academicConfiguration]);
 
     // Group criteria by Specific Competence for better organization
     const groupedCriteria = useMemo(() => {

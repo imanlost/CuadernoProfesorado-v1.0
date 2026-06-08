@@ -19,10 +19,10 @@ const CriteriaAchievement: React.FC<CriteriaAchievementProps> = ({ classData, cr
     const studentCriterionGrades = useMemo(() => {
         const studentGrades = new Map<string, Map<string, number | null>>();
         for (const student of classData.students) {
-            studentGrades.set(student.id, calculateStudentCriterionGrades(student.id, classData, criteria, selectedPeriodId === 'all' ? undefined : selectedPeriodId));
+            studentGrades.set(student.id, calculateStudentCriterionGrades(student.id, classData, criteria, academicConfiguration, selectedPeriodId === 'all' ? undefined : selectedPeriodId));
         }
         return studentGrades;
-    }, [classData, criteria, selectedPeriodId]);
+    }, [classData, criteria, selectedPeriodId, academicConfiguration]);
 
     const classAverageGrades = useMemo(() => {
         const averages = new Map<string, number | null>();

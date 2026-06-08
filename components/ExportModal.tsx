@@ -121,7 +121,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
                 // 2. Criteria Report CSV
                 const criteriaHeaders = ['Alumn@', ...classCriteria.map(c => c.code)];
                 const criteriaRows = classData.students.map(student => {
-                    const studentGrades = calculateStudentCriterionGrades(student.id, classData, classCriteria, evalPeriodId);
+                    const studentGrades = calculateStudentCriterionGrades(student.id, classData, classCriteria, academicConfiguration, evalPeriodId);
                     return [student.name, ...classCriteria.map(c => studentGrades.get(c.id)?.toFixed(2) ?? '')];
                 });
                 const criteriaCsvContent = [criteriaHeaders, ...criteriaRows].map(row => row.map(escapeCsvCell).join(',')).join('\n');
@@ -130,7 +130,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
                 // 3. Specific Competences Report CSV
                 const scHeaders = ['Alumn@', ...classCompetences.map(c => c.code)];
                 const scRows = classData.students.map(student => {
-                    const studentGrades = calculateStudentCompetenceGrades(student.id, classData, classCriteria, classCompetences, evalPeriodId);
+                    const studentGrades = calculateStudentCompetenceGrades(student.id, classData, classCriteria, classCompetences, academicConfiguration, evalPeriodId);
                     return [student.name, ...classCompetences.map(c => studentGrades.get(c.id)?.toFixed(2) ?? '')];
                 });
                 const scCsvContent = [scHeaders, ...scRows].map(row => row.map(escapeCsvCell).join(',')).join('\n');
@@ -139,7 +139,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
                 // 4. Key Competences Report CSV
                 const kcHeaders = ['Alumn@', ...keyCompetences.map(kc => kc.code)];
                 const kcRows = classData.students.map(student => {
-                        const studentGrades = calculateStudentKeyCompetenceGrades(student.id, classData, classCriteria, classCompetences, keyCompetences, evalPeriodId);
+                        const studentGrades = calculateStudentKeyCompetenceGrades(student.id, classData, classCriteria, classCompetences, keyCompetences, academicConfiguration, evalPeriodId);
                     return [student.name, ...keyCompetences.map(kc => studentGrades.get(kc.id)?.toFixed(2) ?? '')];
                 });
                 const kcCsvContent = [kcHeaders, ...kcRows].map(row => row.map(escapeCsvCell).join(',')).join('\n');

@@ -20,10 +20,10 @@ const KeyCompetenceAchievement: React.FC<KeyCompetenceAchievementProps> = ({ cla
     const studentKeyCompetenceGrades = useMemo(() => {
         const studentGrades = new Map<string, Map<string, number | null>>();
         for (const student of classData.students) {
-            studentGrades.set(student.id, calculateStudentKeyCompetenceGrades(student.id, classData, criteria, competences, keyCompetences, selectedPeriodId === 'all' ? undefined : selectedPeriodId));
+            studentGrades.set(student.id, calculateStudentKeyCompetenceGrades(student.id, classData, criteria, competences, keyCompetences, academicConfiguration, selectedPeriodId === 'all' ? undefined : selectedPeriodId));
         }
         return studentGrades;
-    }, [classData, criteria, competences, keyCompetences, selectedPeriodId]);
+    }, [classData, criteria, competences, keyCompetences, selectedPeriodId, academicConfiguration]);
     
     const classAverageGrades = useMemo(() => {
         const averages = new Map<string, number | null>();
@@ -48,7 +48,7 @@ const KeyCompetenceAchievement: React.FC<KeyCompetenceAchievementProps> = ({ cla
             )
         );
     
-        const studentScGrades = calculateStudentCompetenceGrades(student.id, classData, criteria, specificCompetencesForKeyComp, selectedPeriodId === 'all' ? undefined : selectedPeriodId);
+        const studentScGrades = calculateStudentCompetenceGrades(student.id, classData, criteria, specificCompetencesForKeyComp, academicConfiguration, selectedPeriodId === 'all' ? undefined : selectedPeriodId);
     
         const items = specificCompetencesForKeyComp.map(sc => ({
             name: `Comp. Específica ${sc.code}`,

@@ -365,10 +365,7 @@ export const calculateDetailedPeriodGradeBreakdown = (studentId: string, classDa
     };
 };
 
-export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
-    const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;
-    
-    // Calculate period recovery grades from categories in the 'final' period
+export const calculatePeriodRecoveryMap = (studentId: string, classData: ClassData): Map<string, number> => {
     const finalRecoveryCategories = classData.categories.filter(c => c.evaluationPeriodId === 'final' && c.type === 'period_recovery' && c.recoversEvaluationPeriodIds && c.recoversEvaluationPeriodIds.length > 0);
     
     const periodRecoveryMap = new Map<string, number>();
@@ -391,6 +388,14 @@ export const calculateOverallFinalGradeForStudent = (studentId: string, classDat
             });
         }
     });
+
+    return periodRecoveryMap;
+};
+
+export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
+    const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;
+    
+    const periodRecoveryMap = calculatePeriodRecoveryMap(studentId, classData);
 
     let totalWeightUsed = 0;
     let weightedSum = 0;
@@ -429,6 +434,7 @@ export const calculateStudentCriterionGrades = (
     studentId: string,
     classData: ClassData,
     criteria: EvaluationCriterion[],
+    academicConfiguration?: AcademicConfiguration,
     evaluationPeriodId?: string,
 ): Map<string, number | null> => {
     const { assignments, grades, categories } = classData;
@@ -454,13 +460,38 @@ export const calculateStudentCriterionGrades = (
 
     const finalCriterionGrades = new Map<string, number | null>();
 
+    // Pre-compute period recovery rules if academicConfiguration is provided
+    const periodRecoveryMap = calculatePeriodRecoveryMap(studentId, classData);
+    const periodFailedMap = new Map<string, boolean>();
+    
+    if (academicConfiguration) {
+        const { gradeScale, passingGrade = 5 } = academicConfiguration;
+        academicConfiguration.evaluationPeriods.forEach(period => {
+            const pg = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id, gradeScale, passingGrade).grade;
+            periodFailedMap.set(period.id, pg !== null && pg < passingGrade);
+        });
+    }
+
     // 3. Calculate base grades for each criterion from *normal* assignments.
     for (const crit of criteria) {
         const scoresToAverage: number[] = [];
         for (const assignment of normalAssignments) {
             const grade = studentGradesMap.get(assignment.id);
             if (grade?.criterionScores && grade.criterionScores[crit.id] != null) {
-                scoresToAverage.push(grade.criterionScores[crit.id] as number);
+                let critScore = grade.criterionScores[crit.id] as number;
+                
+                // PERIOD RECOVERY BOOST (if applicable)
+                if (academicConfiguration) {
+                    const periodId = assignment.evaluationPeriodId;
+                    if (periodId && periodFailedMap.get(periodId) && periodRecoveryMap.has(periodId)) {
+                        const recScore = periodRecoveryMap.get(periodId)!;
+                        if (recScore > critScore) {
+                            critScore = recScore;
+                        }
+                    }
+                }
+                
+                scoresToAverage.push(critScore);
             }
         }
         
@@ -513,9 +544,10 @@ export const calculateStudentCompetenceGrades = (
     classData: ClassData,
     criteria: EvaluationCriterion[],
     competences: SpecificCompetence[],
+    academicConfiguration?: AcademicConfiguration,
     evaluationPeriodId?: string,
 ): Map<string, number | null> => {
-    const studentCriterionGrades = calculateStudentCriterionGrades(studentId, classData, criteria, evaluationPeriodId);
+    const studentCriterionGrades = calculateStudentCriterionGrades(studentId, classData, criteria, academicConfiguration, evaluationPeriodId);
     const competenceGrades = new Map<string, number | null>();
     
     for (const competence of competences) {
@@ -542,9 +574,10 @@ export const calculateStudentKeyCompetenceGrades = (
     criteria: EvaluationCriterion[], 
     competences: SpecificCompetence[], 
     keyCompetences: KeyCompetence[],
+    academicConfiguration?: AcademicConfiguration,
     evaluationPeriodId?: string
 ): Map<string, number | null> => {
-    const studentCompetenceGrades = calculateStudentCompetenceGrades(studentId, classData, criteria, competences, evaluationPeriodId);
+    const studentCompetenceGrades = calculateStudentCompetenceGrades(studentId, classData, criteria, competences, academicConfiguration, evaluationPeriodId);
     const keyCompetenceGrades = new Map<string, number | null>();
 
     for (const keyCompetence of keyCompetences) {
