@@ -944,6 +944,51 @@ const AcademicConfigManager: React.FC<{
 const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, startNewCourse, onOpenExportModal, onSaveToLocalFile, onOpenLocalFile, onDisconnectLocalFile, onRequestFilePermission, localFileName, filePermissionGranted }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [workspaces, setWorkspaces] = useState<{id: string, name: string}[]>([]);
+    const [activeWorkspace, setActiveWorkspace] = useState<string>('default');
+    const [newWorkspaceName, setNewWorkspaceName] = useState('');
+
+    useEffect(() => {
+        const ws = localStorage.getItem('cuaderno_workspaces');
+        if (ws) setWorkspaces(JSON.parse(ws));
+        else setWorkspaces([{id: 'default', name: 'Curso de Trabajo'}]);
+        
+        setActiveWorkspace(localStorage.getItem('cuaderno_active_workspace') || 'default');
+    }, []);
+
+    const handleSwitchWorkspace = (id: string) => {
+        localStorage.setItem('cuaderno_active_workspace', id);
+        window.location.reload();
+    };
+
+    const handleCreateWorkspace = () => {
+        if (!newWorkspaceName.trim()) return;
+        const newWs = { id: Date.now().toString(), name: newWorkspaceName.trim() };
+        const updated = [...workspaces, newWs];
+        setWorkspaces(updated);
+        localStorage.setItem('cuaderno_workspaces', JSON.stringify(updated));
+        setNewWorkspaceName('');
+    };
+
+    const handleDeleteWorkspace = (id: string) => {
+        if (workspaces.length <= 1) return alert('No puedes borrar el único entorno de trabajo.');
+        if (!confirm('¿Estás seguro de borrar este Curso/Entorno? Esta acción no se puede deshacer y borrará todos los datos asociados a este curso en este dispositivo.')) return;
+        
+        const dbName = id === 'default' ? 'gradebook-sqlite-db' : `gradebook-sqlite-db-${id}`;
+        const request = window.indexedDB.deleteDatabase(dbName);
+        request.onsuccess = () => {
+            const updated = workspaces.filter(w => w.id !== id);
+            setWorkspaces(updated);
+            localStorage.setItem('cuaderno_workspaces', JSON.stringify(updated));
+            if (activeWorkspace === id) {
+                handleSwitchWorkspace(updated[0].id);
+            }
+        };
+        request.onerror = () => {
+            alert('Error al borrar la base de datos.');
+        }
+    };
+
     const handleImportClick = () => fileInputRef.current?.click();
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -961,7 +1006,7 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
         if ('showSaveFilePicker' in window) {
             try {
                 const handle = await (window as any).showSaveFilePicker({
-                    suggestedName: `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`,
+                    suggestedName: `cuaderno_backup_${workspaces.find(w => w.id === activeWorkspace)?.name || "backup"}_${new Date().toISOString().split('T')[0]}.db`,
                     types: [{
                         description: 'SQLite Database',
                         accept: { 'application/x-sqlite3': ['.db', '.sqlite', '.sqlite3'] },
@@ -982,7 +1027,7 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
+        a.download = `cuaderno_backup_${workspaces.find(w => w.id === activeWorkspace)?.name || "backup"}_${new Date().toISOString().split('T')[0]}.db`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -992,6 +1037,64 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
     return (
         <div className="space-y-6">
             <h3 className="text-xl font-bold text-slate-800">Copia de Seguridad y Datos</h3>
+
+            {/* Workspaces Section */}
+            <div className="p-4 border rounded-lg bg-teal-50 border-teal-200">
+                <div className="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 className="font-bold text-teal-800 flex items-center gap-2">
+                            <ComputerDesktopIcon className="w-5 h-5"/>
+                            Múltiples Cursos (Entornos Locales)
+                        </h4>
+                        <p className="text-sm text-teal-700 mt-1">
+                            Crea varios espacios de trabajo en este dispositivo.
+                            Puedes cambiar de curso instantáneamente, cada uno con su propia base de datos guardada en tu navegador.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mt-4 bg-white rounded-md border border-teal-100 overflow-hidden">
+                    <ul className="divide-y divide-teal-100 max-h-48 overflow-y-auto">
+                        {workspaces.map(ws => (
+                            <li key={ws.id} className={`p-3 flex justify-between items-center ${activeWorkspace === ws.id ? 'bg-teal-100/50' : 'hover:bg-slate-50'}`}>
+                                <div className="flex items-center gap-2">
+                                    <span className={`font-medium ${activeWorkspace === ws.id ? 'text-teal-800' : 'text-slate-700'}`}>{ws.name}</span>
+                                    {activeWorkspace === ws.id && <span className="text-[10px] bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">Activo</span>}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {activeWorkspace !== ws.id && (
+                                        <button onClick={() => handleSwitchWorkspace(ws.id)} className="text-xs bg-white border border-teal-300 text-teal-700 px-3 py-1 rounded hover:bg-teal-50 transition-colors shadow-sm">
+                                            Cargar Curso
+                                        </button>
+                                    )}
+                                    {workspaces.length > 1 && (
+                                         <button onClick={() => handleDeleteWorkspace(ws.id)} className="text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors" title="Borrar Curso">
+                                            <TrashIcon className="w-4 h-4"/>
+                                        </button>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                    <input 
+                        type="text" 
+                        value={newWorkspaceName} 
+                        onChange={(e) => setNewWorkspaceName(e.target.value)} 
+                        placeholder="Ej. Curso 2025/26" 
+                        className="flex-grow p-2 text-sm border rounded-md focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                    />
+                    <button 
+                        onClick={handleCreateWorkspace}
+                        disabled={!newWorkspaceName.trim()}
+                        className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 disabled:opacity-50 transition-colors shadow-sm font-medium text-sm whitespace-nowrap"
+                    >
+                        Añadir Nuevo
+                    </button>
+                </div>
+            </div>
 
              {/* Local File Sync Section */}
             <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">

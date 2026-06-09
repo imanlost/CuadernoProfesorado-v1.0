@@ -51,13 +51,17 @@ declare global {
 }
 
 // Helper functions for IndexedDB
-const DB_NAME = 'gradebook-sqlite-db';
+const getDBName = () => {
+    const wsId = localStorage.getItem('cuaderno_active_workspace') || 'default';
+    return wsId === 'default' ? 'gradebook-sqlite-db' : `gradebook-sqlite-db-${wsId}`;
+};
 const DB_STORE_NAME = 'database';
 
 const indexedDB = {
   get: (): Promise<Uint8Array | undefined> => {
     return new Promise((resolve, reject) => {
-      const request = window.indexedDB.open(DB_NAME, 1);
+      const dbName = getDBName();
+      const request = window.indexedDB.open(dbName, 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;
@@ -80,7 +84,8 @@ const indexedDB = {
   },
   set: (data: Uint8Array): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const request = window.indexedDB.open(DB_NAME, 1);
+      const dbName = getDBName();
+      const request = window.indexedDB.open(dbName, 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;
@@ -94,7 +99,8 @@ const indexedDB = {
   },
   getFileHandle: (): Promise<FileSystemFileHandle | undefined> => {
     return new Promise((resolve, reject) => {
-      const request = window.indexedDB.open(DB_NAME, 1);
+      const dbName = getDBName();
+      const request = window.indexedDB.open(dbName, 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;
@@ -112,7 +118,8 @@ const indexedDB = {
   },
   setFileHandle: (handle: FileSystemFileHandle | null): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const request = window.indexedDB.open(DB_NAME, 1);
+      const dbName = getDBName();
+      const request = window.indexedDB.open(dbName, 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;

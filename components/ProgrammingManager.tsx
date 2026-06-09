@@ -4,6 +4,7 @@ import type { ProgrammingUnit, Course, SessionDetail, EvaluationCriterion, Basic
 import { PencilIcon, TrashIcon, PlusIcon, ArrowUpIcon, ArrowDownIcon, ArrowUpTrayIcon, ArrowDownTrayIcon } from './Icons';
 import { PALETTE_COLORS } from '../constants';
 import Modal from './Modal';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 interface ProgrammingManagerProps {
     courses: Course[];
@@ -140,6 +141,25 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
 
     const handleToggleTaught = (unitId: string) => {
         setUnits(prev => prev.map(u => u.id === unitId ? { ...u, isTaught: !u.isTaught } : u));
+    };
+
+    const handleDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+        const sourceIndex = result.source.index;
+        const destIndex = result.destination.index;
+        if (sourceIndex === destIndex) return;
+
+        setUnits(prev => {
+            const unitsOfCourse = prev.filter(u => u.courseId === selectedCourseId);
+            const otherUnits = prev.filter(u => u.courseId !== selectedCourseId);
+
+            const newUnitsOfCourse = Array.from(unitsOfCourse);
+            const [removed] = newUnitsOfCourse.splice(sourceIndex, 1);
+            newUnitsOfCourse.splice(destIndex, 0, removed);
+
+            // Reconstruct keeping the relative position. Easiest is just append to the others.
+            return [...otherUnits, ...newUnitsOfCourse];
+        });
     };
 
     const handleSave = (unit: ProgrammingUnit) => {
@@ -387,24 +407,43 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
                                     <p>¡Añade una o impórtalas para empezar a planificar!</p>
                                 </div>
                             ) : (
-                                filteredUnits.map(unit => {
-                                    const linkedCriteriaData = unit.linkedCriteriaIds.map(id => filteredCriteria.find(c => c.id === id)).filter((c): c is EvaluationCriterion => c !== undefined);
-                                    const linkedBasicKnowledgeData = unit.linkedBasicKnowledgeIds.map(id => filteredBasicKnowledge.find(sb => sb.id === id)).filter((sb): sb is BasicKnowledge => sb !== undefined);
-                                    
-                                    return (
-                                        <div key={unit.id} className="p-3 border rounded-lg group hover:bg-slate-50/50 transition-colors">
-                                            <UnitViewer 
-                                                unit={unit} 
-                                                dateRange={unitDateRanges.get(unit.id)}
-                                                linkedCriteria={linkedCriteriaData} 
-                                                linkedBasicKnowledge={linkedBasicKnowledgeData} 
-                                                onEdit={() => setUnitEditorState({ mode: 'edit', unit })} 
-                                                onDelete={() => handleDelete(unit.id)} 
-                                                onToggleTaught={() => handleToggleTaught(unit.id)}
-                                            />
-                                        </div>
-                                    );
-                                })
+                                <DragDropContext onDragEnd={handleDragEnd}>
+                                    <Droppable droppableId="units-list">
+                                        {(provided) => (
+                                            <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                                                {filteredUnits.map((unit, index) => {
+                                                    const linkedCriteriaData = unit.linkedCriteriaIds.map(id => filteredCriteria.find(c => c.id === id)).filter((c): c is EvaluationCriterion => c !== undefined);
+                                                    const linkedBasicKnowledgeData = unit.linkedBasicKnowledgeIds.map(id => filteredBasicKnowledge.find(sb => sb.id === id)).filter((sb): sb is BasicKnowledge => sb !== undefined);
+                                                    
+                                                    return (
+                                                        // @ts-ignore
+                                                        <Draggable key={unit.id} draggableId={unit.id} index={index}>
+                                                            {(provided, snapshot) => (
+                                                                <div 
+                                                                    ref={provided.innerRef} 
+                                                                    {...provided.draggableProps} 
+                                                                    {...provided.dragHandleProps}
+                                                                    className={`p-3 border rounded-lg group transition-colors bg-white ${snapshot.isDragging ? 'shadow-lg border-blue-400 z-50 ring-2 ring-blue-100' : 'hover:bg-slate-50/50'}`}
+                                                                >
+                                                                    <UnitViewer 
+                                                                        unit={unit} 
+                                                                        dateRange={unitDateRanges.get(unit.id)}
+                                                                        linkedCriteria={linkedCriteriaData} 
+                                                                        linkedBasicKnowledge={linkedBasicKnowledgeData} 
+                                                                        onEdit={() => setUnitEditorState({ mode: 'edit', unit })} 
+                                                                        onDelete={() => handleDelete(unit.id)} 
+                                                                        onToggleTaught={() => handleToggleTaught(unit.id)}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </Draggable>
+                                                    );
+                                                })}
+                                                {provided.placeholder}
+                                            </div>
+                                        )}
+                                    </Droppable>
+                                </DragDropContext>
                             )}
                         </div>
                     </div>
