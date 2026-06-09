@@ -427,6 +427,85 @@ function useDatabase() {
         await indexedDB.setFileHandle(null);
     };
 
+    const startNewCourse = useCallback(async () => {
+        const confirmed1 = window.confirm(
+            "¿Estás seguro de que deseas iniciar un nuevo curso escolar? Esta acción es destructiva y eliminará a todos los alumnos, calificaciones, tareas, y diarios, manteniendo sólo la estructura de cursos, currículo, rúbricas y festivos."
+        );
+        if (!confirmed1) return;
+
+        const confirmed2 = window.confirm(
+            "Se recomienda encarecidamente que realices una copia de seguridad y exportes los informes del curso actual antes de continuar. Si ya lo has hecho o no deseas conservarlos, presiona Aceptar para proceder con la limpieza."
+        );
+
+        if (!dbRef.current || !confirmed2) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const currentYearStart = new Date(appState!.academicConfiguration.academicYearStart);
+            const currentYearEnd = new Date(appState!.academicConfiguration.academicYearEnd);
+            
+            currentYearStart.setFullYear(currentYearStart.getFullYear() + 1);
+            currentYearEnd.setFullYear(currentYearEnd.getFullYear() + 1);
+
+            const shiftedHolidays = appState!.academicConfiguration.holidays.map(h => {
+                const s = new Date(h.startDate); s.setFullYear(s.getFullYear() + 1);
+                const e = new Date(h.endDate); e.setFullYear(e.getFullYear() + 1);
+                return { ...h, startDate: s.toISOString().split('T')[0], endDate: e.toISOString().split('T')[0] };
+            });
+
+            const shiftedPeriods = appState!.academicConfiguration.evaluationPeriods.map(p => {
+                const s = new Date(p.startDate); s.setFullYear(s.getFullYear() + 1);
+                const e = new Date(p.endDate); e.setFullYear(e.getFullYear() + 1);
+                return { ...p, startDate: s.toISOString().split('T')[0], endDate: e.toISOString().split('T')[0] };
+            });
+
+            const newClasses = appState!.classes.map(c => ({
+                ...c,
+                students: [],
+                categories: [],
+                assignments: [],
+                grades: [],
+                skippedDays: []
+            }));
+
+            const newProgrammingUnits = appState!.programmingUnits.map(pu => {
+                if (!pu.startDate) return pu;
+                const d = new Date(pu.startDate); d.setFullYear(d.getFullYear() + 1);
+                return { ...pu, startDate: d.toISOString().split('T')[0] };
+            });
+
+            const newAppState: AppState = {
+                ...appState!,
+                classes: newClasses,
+                journalEntries: [],
+                programmingUnits: newProgrammingUnits,
+                academicConfiguration: {
+                    ...appState!.academicConfiguration,
+                    academicYearStart: currentYearStart.toISOString().split('T')[0],
+                    academicYearEnd: currentYearEnd.toISOString().split('T')[0],
+                    holidays: shiftedHolidays,
+                    evaluationPeriods: shiftedPeriods
+                }
+            };
+
+            dbRef.current.exec("INSERT OR REPLACE INTO app_data (key, data) VALUES ('main', ?)", [JSON.stringify(newAppState)]);
+            const binaryDb = dbRef.current.export();
+            await indexedDB.set(binaryDb);
+            setAppState(newAppState);
+            
+            // Si el usuario tenía un archivo local (Google Drive/Local), al sobrescribirlo aquí
+            // puede que esté arruinando la BBDD del año en ese archivo. Mejor le avisamos que guarde un nuevo archivo.
+            alert("¡Transición a Nuevo Curso completada exitosamente! Se ha mantenido la estructura y se han reiniciado los datos variables.");
+        } catch (e) {
+            console.error("Failed to start new course:", e);
+            setError("Error al iniciar el nuevo curso.");
+        } finally {
+            setLoading(false);
+        }
+    }, [appState]);
+
     const resetDatabase = useCallback(async () => {
         const confirmed = window.confirm(
             "¡ADVERTENCIA MÁXIMA! Esta acción es irreversible y eliminará ABSOLUTAMENTE TODOS los datos de la aplicación: clases, alumnos, calificaciones, currículo, planificaciones, TODO. La aplicación quedará completamente en blanco, lista para que introduzcas tus propios datos desde cero. ¿Estás COMPLETAMENTE seguro de que quieres borrar todo?"
@@ -478,13 +557,13 @@ function useDatabase() {
         }
     }, []);
 
-    return { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted };
+    return { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, startNewCourse, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted };
 }
 
 type View = 'calendar' | 'gradebook' | 'journal' | 'criteria' | 'competences' | 'key-competences' | 'descriptors' | 'statistics';
 
 const App = () => {
-    const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted } = useDatabase();
+    const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, startNewCourse, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted } = useDatabase();
     
     // --- UI State ---
     const [activeClassId, setActiveClassId] = useState<string>('');
@@ -809,6 +888,7 @@ const App = () => {
                 importDatabase={importDatabase}
                 exportDatabase={exportDatabase}
                 resetDatabase={resetDatabase}
+                startNewCourse={startNewCourse}
                 onSaveToLocalFile={saveToLocalFile}
                 onOpenLocalFile={openLocalFile}
                 onDisconnectLocalFile={disconnectLocalFile}

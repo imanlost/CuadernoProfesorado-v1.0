@@ -30,6 +30,7 @@ interface SettingsModalProps {
     importDatabase: (buffer: ArrayBuffer) => Promise<void>;
     exportDatabase: () => Uint8Array | null;
     resetDatabase: () => Promise<void>;
+    startNewCourse: () => Promise<void>;
     basicKnowledge: BasicKnowledge[];
     setBasicKnowledge: (updater: React.SetStateAction<BasicKnowledge[]>) => void;
     academicConfiguration: AcademicConfiguration;
@@ -940,7 +941,7 @@ const AcademicConfigManager: React.FC<{
 };
 
 // ... (BackupManager component updated below) ...
-const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, onOpenExportModal, onSaveToLocalFile, onOpenLocalFile, onDisconnectLocalFile, onRequestFilePermission, localFileName, filePermissionGranted }) => {
+const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDatabase, startNewCourse, onOpenExportModal, onSaveToLocalFile, onOpenLocalFile, onDisconnectLocalFile, onRequestFilePermission, localFileName, filePermissionGranted }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => fileInputRef.current?.click();
@@ -1094,6 +1095,19 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                     <p className="text-sm text-slate-600 mb-4">Exporta las calificaciones e informes a hojas de cálculo (Excel/CSV).</p>
                     <button onClick={onOpenExportModal} className="w-full bg-white text-slate-700 border border-slate-300 py-2 rounded-md hover:bg-slate-100 transition-colors shadow-sm font-medium">
                         Generar Informes
+                    </button>
+                </div>
+            </div>
+
+            <div className="pt-6 border-t border-amber-200 mt-8">
+                <h4 className="text-lg font-bold text-amber-800 mb-2">Transición a Nuevo Curso</h4>
+                <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <p className="font-bold text-amber-900">Iniciar Nuevo Curso (Limpieza de alumnado y calificaciones)</p>
+                        <p className="text-sm text-amber-800">Esta acción eliminará todos los alumnos, calificaciones, tareas y diarios de clase. <strong>Conservará intacta</strong> toda tu estructura inamovible (currículo, programación, configuración académica y festivos avanzados 1 año).</p>
+                    </div>
+                    <button onClick={startNewCourse} className="whitespace-nowrap bg-amber-600 text-white px-4 py-2 rounded-md hover:bg-amber-700 font-medium shadow-sm w-full md:w-auto text-center shrink-0">
+                        Iniciar Nuevo Curso
                     </button>
                 </div>
             </div>
