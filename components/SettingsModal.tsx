@@ -1142,7 +1142,8 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                 </div>
             </div>
 
-             {/* Local File Sync Section */}
+             {/* Local File Sync Section — solo navegador, en Tauri se usan diálogos nativos */}
+            {!('__TAURI_INTERNALS__' in window) && (
             <div className="p-4 border rounded-lg bg-indigo-50 border-indigo-200">
                 <div className="flex justify-between items-start mb-2">
                     <div>
@@ -1220,6 +1221,7 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                     </div>
                 )}
             </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
