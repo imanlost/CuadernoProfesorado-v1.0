@@ -9,6 +9,8 @@ import BulkAddStudentModal from './BulkAddStudentModal';
 import CurriculumManager from './CurriculumManager';
 import ProgrammingManager from './ProgrammingManager';
 import EvaluationToolManager from './EvaluationToolManager';
+import { save, open } from '@tauri-apps/plugin-dialog';
+import { writeFile } from '@tauri-apps/plugin-fs';
 
 
 interface SettingsModalProps {
@@ -947,6 +949,7 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
     const [workspaces, setWorkspaces] = useState<{id: string, name: string}[]>([]);
     const [activeWorkspace, setActiveWorkspace] = useState<string>('default');
     const [newWorkspaceName, setNewWorkspaceName] = useState('');
+    const [defaultSaveDir, setDefaultSaveDir] = useState<string>(() => localStorage.getItem('cuaderno_default_save_dir') || '');
 
     useEffect(() => {
         const ws = localStorage.getItem('cuaderno_workspaces');
@@ -1003,6 +1006,27 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
         const data = exportDatabase();
         if (!data) return;
 
+        // Tauri: usar diálogo nativo de archivos
+        if ('__TAURI_INTERNALS__' in window) {
+            try {
+                const fileName = `cuaderno_backup_${workspaces.find(w => w.id === activeWorkspace)?.name || "backup"}_${new Date().toISOString().split('T')[0]}.db`;
+                const filePath = await save({
+                    defaultPath: defaultSaveDir ? `${defaultSaveDir}/${fileName}` : fileName,
+                    filters: [{ name: 'SQLite Database', extensions: ['db', 'sqlite', 'sqlite3'] }],
+                });
+                if (!filePath) return; // usuario canceló
+                await writeFile(filePath, data);
+                // Guardar el directorio para la próxima vez
+                const dir = filePath.substring(0, filePath.lastIndexOf('/'));
+                localStorage.setItem('cuaderno_default_save_dir', dir);
+                setDefaultSaveDir(dir);
+                return;
+            } catch (err) {
+                console.error("Tauri save failed", err);
+                return;
+            }
+        }
+
         if ('showSaveFilePicker' in window) {
             try {
                 const handle = await (window as any).showSaveFilePicker({
@@ -1033,6 +1057,28 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
     };
 
     const isFSAASupported = 'showOpenFilePicker' in window;
+
+    const handleSetDefaultFolder = async () => {
+        if (!('__TAURI_INTERNALS__' in window)) return;
+        try {
+            const dir = await open({
+                directory: true,
+                multiple: false,
+                title: 'Seleccionar carpeta de descarga por defecto',
+            });
+            if (dir && typeof dir === 'string') {
+                localStorage.setItem('cuaderno_default_save_dir', dir);
+                setDefaultSaveDir(dir);
+            }
+        } catch (err) {
+            console.error("Folder picker failed", err);
+        }
+    };
+
+    const handleClearDefaultFolder = () => {
+        localStorage.removeItem('cuaderno_default_save_dir');
+        setDefaultSaveDir('');
+    };
 
     return (
         <div className="space-y-6">
@@ -1182,6 +1228,31 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
                     <button onClick={handleExportClick} className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors shadow-sm font-medium">
                         Descargar Copia (.db)
                     </button>
+                    {/* Control de carpeta por defecto (solo Tauri) */}
+                    {'__TAURI_INTERNALS__' in window && (
+                        <div className="mt-3 pt-3 border-t border-blue-200">
+                            {defaultSaveDir ? (
+                                <div className="space-y-2">
+                                    <p className="text-xs text-blue-700">
+                                        <span className="font-semibold">Carpeta por defecto:</span><br/>
+                                        <span className="text-blue-600 break-all">{defaultSaveDir}</span>
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button onClick={handleSetDefaultFolder} className="flex-1 text-xs bg-white text-blue-700 border border-blue-300 py-1.5 rounded hover:bg-blue-100 transition-colors">
+                                            Cambiar
+                                        </button>
+                                        <button onClick={handleClearDefaultFolder} className="flex-1 text-xs bg-white text-red-600 border border-red-200 py-1.5 rounded hover:bg-red-50 transition-colors">
+                                            Quitar
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <button onClick={handleSetDefaultFolder} className="w-full mt-1 text-xs bg-white text-blue-600 border border-blue-300 py-1.5 rounded hover:bg-blue-100 transition-colors">
+                                    Establecer carpeta por defecto
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-4 border rounded-lg bg-green-50 border-green-200">
