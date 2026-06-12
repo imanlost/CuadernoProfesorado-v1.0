@@ -1,92 +1,240 @@
-# Cuaderno del Profesorado #
+# 📓 Cuaderno del Profesorado v1.0
 
-## ¡Bienvenido a su cuaderno digital personal!
-Este proyecto es una aplicación local diseñada para que el docente tenga el control absoluto sobre su gestión académica.
-¿Por qué es diferente? A diferencia de las soluciones en la nube, aquí usted es el propietario real de sus datos.
-La base de datos se almacena exclusivamente en su ordenador. Esto garantiza la privacidad de la información del alumnado y el cumplimiento de la normativa de protección de datos, ya que nada sale de su equipo.
-## 💾 Nota sobre la persistencia
-Los datos se guardan en el almacenamiento local de su equipo vinculado al navegador. Siempre que acceda desde el mismo ordenador y con el mismo navegador, sus datos estarán ahí. No es necesario realizar descargas de seguridad diarias para continuar su trabajo, aunque se recomienda hacer copias de la carpeta del proyecto periódicamente.
-## 📱 Vista previa de la aplicación
-### 📅 Calendario
-  
-### 📓 Cuaderno
-  
-### 📄 Diario de clase
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-nc/4.0/)
+[![Deploy](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://cuadernodocentev2.vercel.app/)
+[![Tauri](https://img.shields.io/badge/Desktop-Tauri-FFC131?logo=tauri)](https://github.com/imanlost/CuadernoProfesorado-v0.1.0/releases)
 
-### ⚙️ Ajustes
-        
-→ Ver todas las capturas (20+ imágenes)
-## 🚀 Instalación Paso a Paso
-### 📥 1. Descarga del proyecto (TODOS los sistemas)
-    1. Pulse "Code" (verde) → "Download ZIP"
-    2. Ubíque el zip en la carpeta donde vaya a utilizarlo en adelante.
-    3. Descomprima y recuerde la carpeta
+**Aplicación web y de escritorio para la gestión académica docente con soberanía de datos y evaluación competencial LOMLOE.**
 
-### 🖥️ WINDOWS
-Instalar Node.js
-    1. Vaya a nodejs.org y descargue la versión que dice LTS (es la más estable).
-    2. Ejecute el archivo descargado y pulse Siguiente en todas las ventanas hasta finalizar.
-Abrir terminal en carpeta
-Para que la aplicación funcione, la consola debe "estar" dentro de la carpeta del cuaderno:
-    1. Abra la carpeta donde descomprimió el proyecto.
-    2. En la parte superior de la ventana (en la barra de direcciones donde aparece la ruta de la carpeta), haga clic en un espacio vacío, escriba la palabra cmd y pulse Intro.
-    3. Se abrirá una ventana negra. Si ve que la ruta que aparece escrita coincide con la ubicación de su carpeta, lo ha hecho correctamente.
-Instalación y arranque
-    1. En esa ventana negra, escriba el siguiente comando y pulse Intro:
+Desarrollada con React + Vite + TypeScript + SQLite (sql.js). Toda la información del alumnado permanece en local: en el navegador (IndexedDB), en un archivo `.db` de tu disco, o en la base de datos nativa de la versión de escritorio (Tauri). **Tus datos nunca abandonan tu dispositivo.**
+
+---
+
+## 🎯 ¿Por qué este Cuaderno?
+
+A diferencia de las plataformas comerciales en la nube, este cuaderno:
+
+- 🔒 **Garantiza tu soberanía de datos**: nada se envía a servidores externos. La base de datos SQLite vive en tu navegador u ordenador.
+- 🧮 **Aplica la LOMLOE de verdad**: el motor de evaluación sigue la cascada curricular completa: Criterio → Competencia Específica → Descriptor Operativo → Perfil de Salida.
+- 🆓 **Es gratuito y abierto**: sin suscripciones, sin límites de alumnado, sin publicidad. Licencia CC BY-NC 4.0.
+- 🖥️ **Funciona en cualquier sitio**: navegador web, aplicación de escritorio (Windows, macOS, Linux) y Chromebooks.
+
+---
+
+## ✨ Características Principales
+
+### 📅 Planificación y Calendario
+- **Calendario académico** con vistas de mes, semana y día
+- **Festivos y vacaciones** personalizables que el calendario respeta automáticamente
+- **Horario semanal** configurable con recreos y franjas horarias
+- **Unidades Didácticas (UD)** arrastrables con número de sesiones y vinculación a saberes básicos
+- **Colocación automática** de sesiones en días lectivos, esquivando fines de semana y festivos
+- **Sesiones coloreables** para identificar visualmente tipos de clase
+
+### 🧮 Evaluación Competencial LOMLOE
+- **Dos modos de cálculo de nota final**:
+  - *Clásico*: media ponderada por categorías (exámenes, trabajos, actitud...)
+  - *LOMLOE Puro*: media ponderada de Competencias Específicas con pesos configurables
+- **Cascada curricular completa**: cada tarea se vincula a criterios de evaluación, que alimentan competencias específicas, que nutren descriptores operativos del Perfil de Salida
+- **Ponderación personalizable**: pesos configurables para cada Competencia Específica (%), cada categoría de tareas y cada periodo de evaluación
+- **Umbral de aprobado** configurable (por defecto 5 sobre 10)
+
+### 📝 Instrumentos de Evaluación
+- **Listas de Cotejo**: evaluación binaria (Sí/No) con pesos por ítem
+- **Escalas de Valoración**: niveles numéricos personalizables (ej. 1-5)
+- **Rúbricas**: matrices con niveles y descriptores textuales por criterio
+- **Importación/exportación CSV** de instrumentos
+- Todos los instrumentos normalizan automáticamente a escala 0-10
+
+### 🔄 Sistema de Recuperaciones
+- **Recuperación de tarea**: una tarea de recuperación sobrescribe automáticamente la nota de la tarea original suspendida
+- **Recuperación de evaluación**: categorías tipo "Recuperación de Evaluación" que reemplazan la media del trimestre si el alumno estaba suspenso
+- **Inyección en cascada**: la nota de recuperación se proyecta hacia abajo en todos los criterios de evaluación del periodo
+
+### 📊 Informes y Estadísticas
+- **Informes competenciales** por alumno y grupo:
+  - Criterios de Evaluación
+  - Competencias Específicas
+  - Competencias Clave
+  - Descriptores Operativos (Perfil de Salida)
+- **Filtro por periodo**: 1ª, 2ª, 3ª Evaluación o Curso Completo
+- **Estadísticas gráficas** del grupo (Recharts): distribución de notas, porcentaje de aprobados, medias
+- **Exportación de informes** para actas de evaluación
+
+### 👥 Gestión de Alumnado
+- **Carga masiva** de alumnado: pega una columna de nombres desde Excel, Séneca o Raíces
+- **Etiquetas ACNEAE**: anota necesidades educativas (RE, ACS, etc.) con contador por alumno
+- **Vista de resumen** por alumno con todas sus calificaciones
+- **Desglose de nota** clicable: muestra la fórmula matemática exacta de cada calificación
+
+### 📚 Gestión Curricular
+- **Importación CSV** del currículo LOMLOE con fusión inteligente de descriptores (evita duplicados)
+- **Exportación CSV** para respaldo o edición externa
+- **Gestor visual** de Competencias Clave, Descriptores Operativos, Competencias Específicas, Criterios de Evaluación y Saberes Básicos
+- **Editor in-situ** de todos los elementos curriculares con vinculación cruzada
+
+### 💾 Persistencia y Copias de Seguridad
+- **Almacenamiento automático** en IndexedDB del navegador (cada 1.5 segundos)
+- **Modo Archivo Local**: sincronización bidireccional con un archivo `.db` en tu disco (File System Access API)
+- **Múltiples espacios de trabajo**: bases de datos independientes para distintos cursos o especialidades
+- **Copia de seguridad**: descarga y restauración de la base de datos completa
+- **Transición de curso**: botón "Nuevo Curso" que vacía alumnado y notas pero conserva currículo, instrumentos y configuración, avanzando las fechas un año
+
+### 📖 Diario de Clase
+- Registro diario por clase con notas de texto
+- Sincronización bidireccional con el Calendario
+- Colores por sesión para categorización visual
+
+---
+
+## 🚀 Instalación y Ejecución
+
+### 🌐 Versión Web (Navegador)
+
+**Opción A — Usar la versión desplegada (recomendado para la mayoría):**
+Accede a **[https://cuadernodocentev2.vercel.app/](https://cuadernodocentev2.vercel.app/)** y empieza a trabajar. Tus datos se guardan automáticamente en el navegador.
+
+**Opción B — Ejecutar en local:**
+```bash
+# Requisito: Node.js LTS (v18 o superior)
+git clone https://github.com/imanlost/CuadernoProfesorado-v1.0.git
+cd CuadernoProfesorado-v1.0
 npm install
-    1. Espere a que terminen de aparecer líneas de texto. Una vez que se detenga, escriba:
 npm run dev
+```
+Abre `http://localhost:5173` en tu navegador (la terminal debe permanecer abierta).
 
-### 🍎 macOS
-Instalar Node.js
-    1. Vaya a nodejs.org y descargue la versión que dice LTS (es la más estable).
-    2. Ejecute el archivo descargado y pulse Siguiente en todas las ventanas hasta finalizar.
-Abrir terminal en carpeta
-    1. Busque su carpeta del cuaderno en el Finder.
-    2. Haga clic derecho sobre la carpeta del cuaderno.
-    3. Seleccione Nuevo terminal en la carpeta (o «Servicios» → «Nuevo terminal en la carpeta»).
-    4. Se abrirá una ventana blanca o negra. Verá el nombre de su carpeta justo antes del cursor.
-Instalación y arranque
-    1. En el terminal, escriba este comando y pulse Intro:
-npm install
-    1. Cuando finalice el proceso, escriba el comando de arranque:
-npm run dev
+### 🖥️ Versión de Escritorio (Windows, macOS, Linux)
 
-### 🐧 Linux
-Instalar Node.js
-sudo apt update && sudo apt install nodejs npm
-Abrir terminal en carpeta
-    1. Localice la carpeta descomprimida.
-    2. Haga clic derecho en un espacio vacío dentro de esa carpeta y seleccione Abrir en una terminal.
-Instalación y arranque
-    1. En el terminal, escriba este comando y pulse Intro:
-npm install
-    1. Cuando finalice el proceso, escriba el comando de arranque:
-npm run dev
+Descarga el instalador desde la [página de releases](https://github.com/imanlost/CuadernoProfesorado-v0.1.0/releases):
+- **Linux**: `.deb` (Debian/Ubuntu) o AppImage
+- **Windows**: `.msi` o `.exe`
+- **macOS**: `.dmg`
 
-### 💻 ChromeOS (Chromebook)
-Como están gestionados por el Depto de Educación, lo más factible y funcional es entrar desde este enlace https://cuadernodocentev2.vercel.app/ y trabajar directamente desde el navegador.
+La versión de escritorio usa acceso nativo al sistema de archivos (no depende del navegador) y ofrece máxima privacidad.
 
-## 🌐 Acceder
-Una vez que haya ejecutado el comando npm run dev, fíjese en los mensajes que aparecen en la consola. Verá una línea similar a esta:
-> Local: http://localhost:3000/
-El número (3000, 3001, etc.) es el puerto. Aunque normalmente es el 3000, si ese está ocupado, el sistema abrirá otro automáticamente.
-    1. No cierre la ventana de la consola (si la cierra, la aplicación dejará de funcionar).
-    2. Abra su navegador (Chrome, Firefox, Edge, etc.).
-    3. En la barra de direcciones superior, escriba la dirección que le indicó la consola (normalmente http://localhost:3000/) y pulse Intro.
+### 💻 Chromebooks
 
-## 🛑 Para detener la aplicación
-Simplemente cierre la ventana de la consola o pulse las teclas Control + C en su teclado dentro de la terminal.
+Usa la [versión web desplegada](https://cuadernodocentev2.vercel.app/). Funciona perfectamente en el navegador Chrome de los Chromebooks de centros educativos.
 
-## 📖 Manual de Usuario Completo
-Para aprender a usar todas las funciones de la aplicación:
-📚 Ver Manual de Usuario
-🔒 Sobre la seguridad de los datos
+---
 
-    • ✅ 100% local - Nada sale de su ordenador
-    • ✅ Sin cuentas ni registros - No necesita registrarse
-    • ✅ Compatible con RGPD - Cumple normativa de protección de datos
-    • ✅ Copia de seguridad sencilla - Copie la carpeta completa
-    
-¡Ya puede empezar a usar su Cuaderno del Profesorado!
+## 🗺️ Flujo de Trabajo Recomendado
 
+### 1. Primer arranque: Configuración Inicial
+
+1. Abre **Ajustes ⚙️** (icono de engranaje)
+2. **Configuración del Curso**: establece fechas de inicio/fin, periodos de evaluación, festivos y umbral de aprobado
+3. **Cursos y Materias**: crea tus cursos (ej. "3º ESO - Biología y Geología")
+4. **Clases y Alumnado**: crea tus grupos y carga el alumnado
+5. **Horario Semanal**: configura las franjas horarias y asigna tus clases
+6. **Gestionar Currículo**: importa el currículo LOMLOE desde CSV
+7. **Planificación UD**: crea tus Unidades Didácticas con sus sesiones y saberes
+8. **Instrumentos Evaluación**: crea tus rúbricas, escalas y listas de cotejo
+
+### 2. Día a día
+
+1. **Calendario**: consulta tu planificación, añade tareas calificables desde el día correspondiente
+2. **Cuaderno → Calificaciones**: introduce notas en las tareas creadas
+3. **Diario de Clase**: registra incidencias, observaciones o el desarrollo de la sesión
+
+### 3. Final de evaluación
+
+1. **Cuaderno → Informes**: revisa los informes competenciales de tu alumnado
+2. **Cuaderno → Estadísticas**: analiza los gráficos de rendimiento del grupo
+3. **Ajustes → Copia de Seguridad**: descarga una copia de seguridad de tu base de datos
+
+---
+
+## 🧠 Modo LOMLOE Puro
+
+El cuaderno ofrece dos modos de cálculo para la nota final:
+
+| Modo | Cálculo | Cuándo usarlo |
+|---|---|---|
+| **Clásico** | Media ponderada de categorías de tareas (exámenes 60%, trabajos 30%, actitud 10%) | Evaluación tradicional por instrumentos |
+| **LOMLOE Puro** | Media ponderada de Competencias Específicas (CE1 25%, CE2 30%, CE3 20%, CE4 25%) | Evaluación competencial estricta |
+
+Para activar el modo LOMLOE Puro:
+1. Ve a **Ajustes ⚙️** y activa el radio button "LOMLOE Puro"
+2. En **Gestionar Currículo**, edita cada Competencia Específica y asígnale un peso (%)
+3. Al calificar tareas, vincula cada una a sus criterios de evaluación
+
+El sistema calcula automáticamente la nota de cada competencia como la media de los criterios vinculados, y la nota final como la media ponderada de las competencias.
+
+---
+
+## 📋 Formato del CSV Curricular
+
+Para importar el currículo, prepara un archivo CSV con esta estructura:
+
+```csv
+type,id,code,description,links
+KC,kc-ccl,"CCL","Competencia en comunicación lingüística"
+OD,od-cc1-eso,"CCL1","Se expresa de forma oral, escrita...",kc-ccl
+SC,sc-bg3-1,"CEs 1","Interpretar y transmitir información...",od-cc1-eso
+EC,ec-bg3-1.1,"1.1","Analizar conceptos y procesos biológicos..."
+SB,sb-bg3-1,"A.1","La célula como unidad estructural y funcional..."
+```
+
+| Columna | Descripción |
+|---|---|
+| `type` | `KC` (Competencia Clave), `OD` (Descriptor Operativo), `SC` (Competencia Específica), `EC` (Criterio de Evaluación), `SB` (Saber Básico) |
+| `id` | Identificador único (ej. `sc-bg3-1`) |
+| `code` | Código oficial (ej. `CEs 1`, `1.1`, `CCL1`) |
+| `description` | Enunciado completo del elemento curricular |
+| `links` | IDs de los elementos padre (OD → KC, SC → OD, EC → SC). El criterio se vincula automáticamente a la CE por su numeración |
+
+---
+
+## 🛡️ Soberanía de Datos y RGPD
+
+- **Todos los datos se almacenan en local**: IndexedDB del navegador, archivo `.db` en disco, o base de datos nativa en la versión Tauri.
+- **No hay servidor backend**: la aplicación es 100% cliente (React + SQLite en WASM).
+- **No se envían datos a terceros**: ni analíticas, ni telemetría, ni cookies de seguimiento.
+- **Cumplimiento RGPD**: al no tratar datos en servidores externos, minimizas los riesgos legales.
+
+---
+
+## 🔧 Tecnologías
+
+| Tecnología | Uso |
+|---|---|
+| [React 18](https://react.dev/) | Interfaz de usuario |
+| [Vite](https://vitejs.dev/) | Bundler y servidor de desarrollo |
+| [TypeScript](https://www.typescriptlang.org/) | Lenguaje |
+| [sql.js](https://sql.js.org/) | SQLite compilado a WebAssembly |
+| [Tauri 2](https://tauri.app/) | Empaquetado como aplicación de escritorio |
+| [Tailwind CSS](https://tailwindcss.com/) | Estilos |
+| [Recharts](https://recharts.org/) | Gráficos de estadísticas |
+| [hello-pangea/dnd](https://github.com/hello-pangea/dnd) | Drag & drop de Unidades Didácticas |
+
+---
+
+## 📚 Documentación
+
+- 📖 **[Manual de Usuario (Web)](MANUAL_USUARIO_WEB.md)** — Guía completa para la versión de navegador
+- 🖥️ **[Manual de Usuario (Escritorio)](MANUAL_USUARIO_ESCRITORIO.md)** — Guía para la versión Tauri (.deb/.msi/.dmg)
+- 📋 **[CHANGELOG.md](CHANGELOG.md)** — Historial de cambios y mejoras
+
+---
+
+## 📄 Licencia
+
+[Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](http://creativecommons.org/licenses/by-nc/4.0/)
+
+Esto significa que puedes:
+- ✅ Usar la aplicación gratuitamente con fines educativos
+- ✅ Compartirla con compañeros docentes
+- ✅ Modificar el código para adaptarlo a tus necesidades
+- ❌ Usarla con fines comerciales sin permiso
+
+---
+
+## 🤝 Contribuciones
+
+¿Eres docente y has detectado un error o tienes una idea de mejora? Abre un [issue](https://github.com/imanlost/CuadernoProfesorado-v1.0/issues) o envía un pull request.
+
+---
+
+**Hecho por un docente, para docentes.**
