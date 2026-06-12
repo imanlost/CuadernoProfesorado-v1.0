@@ -28,8 +28,6 @@ import SettingsModal from './components/SettingsModal';
 import ExportModal from './components/ExportModal';
 import CalendarView from './components/CalendarView';
 import Logo from './components/Logo';
-import { save, open } from '@tauri-apps/plugin-dialog';
-import { writeFile, readFile } from '@tauri-apps/plugin-fs';
 
 // Type for the entire application state
 interface AppState {
@@ -323,33 +321,10 @@ function useDatabase() {
 
     // File System Access API Handlers
     const saveToLocalFile = async () => {
+        const supportsPicker = 'showSaveFilePicker' in window;
         const db = dbRef.current;
         if (!db) return;
         const binaryDb = db.export();
-
-        // Tauri: usar diálogo nativo de archivos
-        if ('__TAURI_INTERNALS__' in window) {
-            try {
-                const defaultDir = localStorage.getItem('cuaderno_default_save_dir') || '';
-                const fileName = `cuaderno_backup_${new Date().toISOString().split('T')[0]}.db`;
-                const filePath = await save({
-                    defaultPath: defaultDir ? `${defaultDir}/${fileName}` : fileName,
-                    filters: [{ name: 'SQLite Database', extensions: ['db', 'sqlite', 'sqlite3'] }],
-                });
-                if (!filePath) return;
-                await writeFile(filePath, binaryDb);
-                // Guardar el directorio para la próxima vez
-                const dir = filePath.substring(0, filePath.lastIndexOf('/'));
-                localStorage.setItem('cuaderno_default_save_dir', dir);
-                alert(`Copia guardada en:\n${filePath}`);
-                return;
-            } catch (err) {
-                console.error("Tauri save failed", err);
-                return;
-            }
-        }
-
-        const supportsPicker = 'showSaveFilePicker' in window;
 
         if (supportsPicker) {
             try {
@@ -388,37 +363,6 @@ function useDatabase() {
     };
 
     const openLocalFile = async () => {
-        // Tauri: usar diálogo nativo de archivos
-        if ('__TAURI_INTERNALS__' in window) {
-            try {
-                const filePath = await open({
-                    filters: [{ name: 'SQLite Database', extensions: ['db', 'sqlite', 'sqlite3'] }],
-                    multiple: false,
-                });
-                if (!filePath) return;
-                const fileData = await readFile(filePath as string);
-                setLoading(true);
-                const SQL = await window.initSqlJs({ locateFile: (file: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
-                const db = new SQL.Database(fileData);
-                dbRef.current = db;
-                const data = loadDataFromDb(db);
-                if (data) {
-                    setAppState(data);
-                    const binaryDb = db.export();
-                    await indexedDB.set(binaryDb);
-                    alert(`Archivo "${filePath}" cargado exitosamente.`);
-                } else {
-                    throw new Error("El archivo no es una base de datos válida.");
-                }
-            } catch (err: any) {
-                console.error(err);
-                alert("Error al cargar el archivo.");
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
-
         const supportsPicker = 'showOpenFilePicker' in window;
         
         const processFile = async (file: File, handle?: any) => {
@@ -646,7 +590,8 @@ const App = () => {
             
             if (appState.classes.length > 0) {
                 const academicCourses = new Set((appState.courses || []).filter(c => c.type !== 'other').map(c => c.id));
-                const firstAcademicClass = appState.classes.find(c => academicCourses.has(c.courseId));
+                const sortedAcademicClasses = [...appState.classes].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+                const firstAcademicClass = sortedAcademicClasses.find(c => academicCourses.has(c.courseId));
                 setActiveClassId(firstAcademicClass?.id || appState.classes[0].id);
             }
             setInitialized(true);

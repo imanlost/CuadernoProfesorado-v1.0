@@ -184,9 +184,44 @@ export const calculateAssignmentScoresForStudent = (studentId: string, assignmen
     return scores;
 };
 
-export const calculateEvaluationPeriodGradeForStudent = (studentId: string, classData: ClassData, evaluationPeriodId: string, gradeScale?: GradeScaleRule[], passingGrade: number = 5): { grade: number | null; styleClasses: string } => {
+export const calculateEvaluationPeriodGradeForStudent = (
+    studentId: string, 
+    classData: ClassData, 
+    evaluationPeriodId: string, 
+    gradeScale?: GradeScaleRule[], 
+    passingGrade: number = 5,
+    academicConfiguration?: AcademicConfiguration,
+    criteria?: EvaluationCriterion[],
+    competences?: SpecificCompetence[]
+): { grade: number | null; styleClasses: string } => {
     const { assignments, categories, grades } = classData;
-    
+
+    // LOMLOE PURE MODE
+    if (academicConfiguration?.calculationMode === 'competences' && criteria && competences) {
+        // We calculate the competence grades first.
+        // To avoid circular dependency issues with calculateStudentCompetenceGrades (which calls calculateStudentCriterionGrades),
+        // we use them directly. They are defined below, which is fine at runtime.
+        const competenceGrades = calculateStudentCompetenceGrades(studentId, classData, criteria, competences, academicConfiguration, evaluationPeriodId);
+        
+        let totalWeight = 0;
+        let weightedSum = 0;
+        
+        competences.forEach(comp => {
+            if (comp.courseId === classData.courseId) {
+                const grade = competenceGrades.get(comp.id);
+                const weight = comp.weight || 0;
+                if (grade !== null && grade !== undefined && weight > 0) {
+                    weightedSum += grade * weight;
+                    totalWeight += weight;
+                }
+            }
+        });
+        
+        if (totalWeight === 0) return { grade: null, styleClasses: getGradeColorClass(null, gradeScale, passingGrade) };
+        const finalGrade = weightedSum / totalWeight; // or weightedSum / 100 if we strictly enforce 100%
+        return { grade: finalGrade, styleClasses: getGradeColorClass(finalGrade, gradeScale, passingGrade) };
+    }
+
     // 1. Identify Recovery Assignments in this period
     const recoveryAssignments = assignments.filter(a => {
         const cat = categories.find(c => c.id === a.categoryId);
@@ -392,7 +427,13 @@ export const calculatePeriodRecoveryMap = (studentId: string, classData: ClassDa
     return periodRecoveryMap;
 };
 
-export const calculateOverallFinalGradeForStudent = (studentId: string, classData: ClassData, academicConfiguration: AcademicConfiguration): { grade: string; styleClasses: string } => {
+export const calculateOverallFinalGradeForStudent = (
+    studentId: string, 
+    classData: ClassData, 
+    academicConfiguration: AcademicConfiguration,
+    criteria?: EvaluationCriterion[],
+    competences?: SpecificCompetence[]
+): { grade: string; styleClasses: string } => {
     const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;
     
     const periodRecoveryMap = calculatePeriodRecoveryMap(studentId, classData);
@@ -401,7 +442,9 @@ export const calculateOverallFinalGradeForStudent = (studentId: string, classDat
     let weightedSum = 0;
 
     evaluationPeriods.forEach(period => {
-        let periodGrade = calculateEvaluationPeriodGradeForStudent(studentId, classData, period.id, gradeScale, passingGrade).grade;
+        let periodGrade = calculateEvaluationPeriodGradeForStudent(
+            studentId, classData, period.id, gradeScale, passingGrade, academicConfiguration, criteria, competences
+        ).grade;
         
         // Apply period recovery if it exists and is higher AND original grade was failing
         if (periodRecoveryMap.has(period.id)) {
