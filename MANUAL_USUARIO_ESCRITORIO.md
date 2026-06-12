@@ -495,6 +495,4 @@ Esta aplicación es gratuita para uso educativo. Puedes compartirla y modificarl
 
 ---
 
-*¿Tienes dudas o sugerencias? Abre una incidencia en [GitHub](https://github.com/imanlost/CuadernoProfesorado-v1.0/issues).*
-
 *Hecho por un docente, para docentes.*
