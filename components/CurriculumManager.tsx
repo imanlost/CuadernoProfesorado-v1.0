@@ -733,7 +733,7 @@ const EditableItem = ({ item, type, onSave, onDelete, allDescriptors, allCompete
                             placeholder="Ej: 1.1"
                         />
                     </div>
-                    <div className="col-span-3">
+                    <div className={type === 'sc' ? "col-span-2" : "col-span-3"}>
                         <label className="text-[10px] font-bold text-slate-500 uppercase">Descripción</label>
                         <textarea 
                             value={data.description} 
@@ -742,6 +742,20 @@ const EditableItem = ({ item, type, onSave, onDelete, allDescriptors, allCompete
                             placeholder="Enunciado del elemento..."
                         />
                     </div>
+                    {type === 'sc' && (
+                        <div className="col-span-1">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">Peso (%)</label>
+                            <input 
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={data.weight || ''} 
+                                onChange={(e) => setData({ ...data, weight: parseFloat(e.target.value) || 0 })}
+                                className="w-full p-1.5 border rounded text-sm font-bold text-center"
+                                placeholder="Ej: 20"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {type === 'sc' && allDescriptors && (
@@ -796,6 +810,11 @@ const EditableItem = ({ item, type, onSave, onDelete, allDescriptors, allCompete
             <div className="flex-grow">
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-bold bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">{item.code}</span>
+                    {type === 'sc' && typeof item.weight === 'number' && (
+                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-200">
+                            {item.weight}%
+                        </span>
+                    )}
                     <p className="text-sm text-slate-700 leading-relaxed">{item.description}</p>
                 </div>
                 {type === 'sc' && (
