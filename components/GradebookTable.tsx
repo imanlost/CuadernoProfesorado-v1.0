@@ -132,7 +132,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
     for (const student of classData.students) {
         const studentGrades = new Map<string, { grade: number | null; styleClasses: string }>();
         evaluationPeriods.forEach(period => {
-            studentGrades.set(period.id, calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id, academicConfiguration.gradeScale, academicConfiguration.passingGrade));
+            studentGrades.set(period.id, calculateEvaluationPeriodGradeForStudent(student.id, classData, period.id, academicConfiguration.gradeScale, academicConfiguration.passingGrade, academicConfiguration, criteria, specificCompetences));
         });
         periodGrades.set(student.id, studentGrades);
     }
@@ -142,7 +142,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
   const studentOverallFinalGrades = useMemo(() => {
       const finalGrades = new Map<string, { grade: string; styleClasses: string }>();
       for (const student of classData.students) {
-          finalGrades.set(student.id, calculateOverallFinalGradeForStudent(student.id, classData, academicConfiguration));
+          finalGrades.set(student.id, calculateOverallFinalGradeForStudent(student.id, classData, academicConfiguration, criteria, specificCompetences));
       }
       return finalGrades;
   }, [classData, academicConfiguration]);
@@ -619,6 +619,14 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       )}
 
       <div className="overflow-x-auto">
+        {academicConfiguration.calculationMode === 'competences' && (
+            <div className="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-3 mb-4 rounded shadow-sm text-sm flex items-center justify-between">
+                <div>
+                    <strong className="block">Modo LOMLOE Puro Activo</strong>
+                    La Nota Final calculada en este periodo es la media ponderada de las Competencias Específicas, ignorando los pesos de las Categorías de esta tabla.
+                </div>
+            </div>
+        )}
         <table className="w-max text-sm text-left">
           {/* Fix: Header set to sticky top-0 to stick to the very top of scroll view area */}
           <thead className="text-xs text-slate-700 uppercase bg-slate-100 sticky top-0 z-20 shadow-sm">

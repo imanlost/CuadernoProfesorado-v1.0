@@ -26,6 +26,7 @@ export interface SpecificCompetence {
   description: string;
   keyCompetenceDescriptorIds: string[]; // Links to OperationalDescriptor ids
   courseId: string; // Links to Course id
+  weight?: number; // LOMLOE Pure: Percentage weight of this competence in the final grade
 }
 
 export interface Student {
@@ -194,6 +195,7 @@ export interface AcademicConfiguration {
   holidays: Holiday[];
   evaluationPeriods: EvaluationPeriod[];
   evaluationPeriodWeights?: Record<string, number>;
+  calculationMode?: 'categories' | 'competences'; // Toggle for LOMLOE Pure
   layoutMode?: 'mobile' | 'tablet' | 'desktop';
   periods?: string[];
   defaultStartView?: 'calendar' | 'gradebook' | 'journal';
