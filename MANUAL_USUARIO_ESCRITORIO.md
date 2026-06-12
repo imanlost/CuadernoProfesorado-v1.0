@@ -7,7 +7,7 @@
 Guía completa para la versión de escritorio del Cuaderno del Profesorado, disponible para **Windows**, **macOS** y **Linux**.
 
 <p align="center">
-  <a href="http://creativecommons.org/licenses/by-nc/4.0/"><img src="https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg" alt="License: CC BY-NC 4.0"></a>
+  <a href="http://creativecommons.org/licenses/by-nc/4.0/"><img src="https://licensebuttons.net/l/by-nc/4.0/88x31.png" alt="CC BY-NC 4.0"></a>
 </p>
 
 ---
