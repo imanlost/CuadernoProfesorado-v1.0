@@ -1,6 +1,13 @@
 # 📓 Cuaderno del Profesorado v1.0
 
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-nc/4.0/)
+<p align="center">
+  <img src="public/cuadernoprofesor.svg" alt="Cuaderno Profesorado" width="200">
+</p>
+
+<p align="center">
+  <a href="http://creativecommons.org/licenses/by-nc/4.0/"><img src="https://licensebuttons.net/l/by-nc/4.0/88x31.png" alt="CC BY-NC 4.0"></a>
+</p>
+
 [![Deploy](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://cuadernodocentev2.vercel.app/)
 [![Tauri](https://img.shields.io/badge/Desktop-Tauri-FFC131?logo=tauri)](https://github.com/imanlost/CuadernoProfesorado-v0.1.0/releases)
 
