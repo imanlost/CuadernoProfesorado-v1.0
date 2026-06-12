@@ -1,5 +1,13 @@
 # 📚 Manual de Usuario — Cuaderno del Profesorado (Web)
 
+<p align="center">
+  <img src="public/cuadernoprofesor.svg" alt="Cuaderno Profesorado" width="200">
+</p>
+
+<p align="center">
+  <a href="http://creativecommons.org/licenses/by-nc/4.0/"><img src="https://licensebuttons.net/l/by-nc/4.0/88x31.png" alt="CC BY-NC 4.0"></a>
+</p>
+
 Guía completa para la versión web del Cuaderno del Profesorado, accesible desde cualquier navegador moderno en **[cuadernodocentev2.vercel.app](https://cuadernodocentev2.vercel.app/)**.
 
 ---
@@ -391,7 +399,13 @@ El sistema bloquea el borrado si hay criterios de evaluación vinculados a esa c
 
 ## 📄 Licencia
 
-[CC BY-NC 4.0](http://creativecommons.org/licenses/by-nc/4.0/) — Uso educativo no comercial.
+<p align="center">
+  <a href="http://creativecommons.org/licenses/by-nc/4.0/">
+    <img src="https://licensebuttons.net/l/by-nc/4.0/88x31.png" alt="CC BY-NC 4.0">
+  </a>
+</p>
+
+Esta aplicación es gratuita para uso educativo. Puedes compartirla y modificarla, pero no venderla. [CC BY-NC 4.0](http://creativecommons.org/licenses/by-nc/4.0/).
 
 ---
 
