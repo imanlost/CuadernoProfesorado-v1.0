@@ -9,7 +9,7 @@
 </p>
 
 [![Deploy](https://img.shields.io/badge/Deploy-Vercel-black?logo=vercel)](https://cuadernodocentev2.vercel.app/)
-[![Tauri](https://img.shields.io/badge/Desktop-Tauri-FFC131?logo=tauri)](https://github.com/imanlost/CuadernoProfesorado-v0.1.0/releases)
+[![Tauri](https://img.shields.io/badge/Desktop-Tauri-FFC131?logo=tauri)](https://drive.google.com/drive/folders/14ipQlfZ7RB2Pz2XT9q7xXI2pbT2F108Y)
 
 **Aplicación web y de escritorio para la gestión académica docente con soberanía de datos y evaluación competencial LOMLOE.**
 
@@ -113,7 +113,7 @@ Abre `http://localhost:5173` en tu navegador (la terminal debe permanecer abiert
 
 ### 🖥️ Versión de Escritorio (Windows, macOS, Linux)
 
-Descarga el instalador desde la [página de releases](https://github.com/imanlost/CuadernoProfesorado-v0.1.0/releases):
+Descarga el instalador para profesorado de Navarra desde la [página de releases](https://drive.google.com/drive/folders/14ipQlfZ7RB2Pz2XT9q7xXI2pbT2F108Y):
 - **Linux**: `.deb` (Debian/Ubuntu) o AppImage
 - **Windows**: `.msi` o `.exe`
 - **macOS**: `.dmg`
@@ -235,12 +235,6 @@ Esto significa que puedes:
 - ✅ Compartirla con compañeros docentes
 - ✅ Modificar el código para adaptarlo a tus necesidades
 - ❌ Usarla con fines comerciales sin permiso
-
----
-
-## 🤝 Contribuciones
-
-¿Eres docente y has detectado un error o tienes una idea de mejora? Abre un [issue](https://github.com/imanlost/CuadernoProfesorado-v1.0/issues) o envía un pull request.
 
 ---
 
