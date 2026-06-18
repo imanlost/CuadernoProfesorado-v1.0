@@ -90,35 +90,27 @@ Descarga el archivo `.dmg` y arrastra la aplicación a la carpeta `Aplicaciones`
 
 > ⚠️ **Aviso importante sobre Gatekeeper**: Apple exige que los desarrolladores paguen 99 USD al año por una "firma de desarrollador" que certifica las aplicaciones. Como este es un proyecto gratuito y sin ánimo de lucro, **no disponemos de esa firma**. Por eso, al abrir la aplicación, macOS te dirá que "no se puede abrir porque el desarrollador no está verificado".
 
-Esto **no significa que la aplicación sea peligrosa**. Solo indica que Apple no ha cobrado por revisarla. Para abrirla, prueba estos métodos **en orden**:
+Esto **no significa que la aplicación sea peligrosa**. Solo indica que Apple no ha cobrado por revisarla. Para abrirla:
 
-#### Método A: clic derecho (el más rápido)
+#### Método recomendado: Terminal (funciona siempre)
 
 1. Arrastra `CuadernoDocente.app` del DMG a la carpeta `Aplicaciones`
-2. Ve a la carpeta `Aplicaciones` en el Finder
-3. Haz **clic derecho** (o Control+clic) sobre "CuadernoDocente"
-4. Selecciona **"Abrir"** en el menú
-5. En el aviso que aparece, vuelve a hacer clic en **"Abrir"**
-
-#### Método B: Preferencias del Sistema
-
-Si el método A no muestra la opción "Abrir":
-
-1. Copia la app a `Aplicaciones` e intenta abrirla con doble clic (saldrá el aviso de bloqueo)
-2. Ve a **Preferencias del Sistema → Privacidad y Seguridad**
-3. Baja hasta la sección **Seguridad** — verás un mensaje: *"CuadernoDocente" fue bloqueado*
-4. Pulsa **"Abrir de todas formas"** y confirma
-
-#### Método C: Terminal (si los anteriores fallan)
-
-1. Abre Terminal (Cmd+Espacio, escribe "Terminal")
-2. Pega este comando y pulsa Enter (te pedirá tu contraseña):
+2. Abre Terminal (Cmd+Espacio, escribe "Terminal")
+3. Pega este comando y pulsa Enter (te pedirá tu contraseña):
 
 ```bash
 sudo xattr -cr /Applications/CuadernoDocente.app
 ```
 
-3. Ahora abre la app con doble clic desde `Aplicaciones`
+4. Ahora abre la app con doble clic desde `Aplicaciones`
+
+#### Método alternativo: Preferencias del Sistema
+
+Si prefieres no usar Terminal:
+
+1. Copia la app a `Aplicaciones` e intenta abrirla (saldrá el aviso de bloqueo)
+2. Ve a **Preferencias del Sistema → Privacidad y Seguridad**
+3. Busca el mensaje: *"CuadernoDocente" fue bloqueado* y pulsa **"Abrir de todas formas"**
 
 Solo necesitas hacer esto la primera vez. Después se abrirá normalmente.
 
@@ -533,11 +525,13 @@ Es normal. Nuestro programa no está firmado con Microsoft (cuesta dinero). Puls
 
 ### macOS dice que la aplicación está dañada o no se puede abrir
 
-No está dañada. Apple bloquea las aplicaciones que no pagan su cuota anual de desarrollador (99 USD/año). Soluciones, en orden:
+No está dañada. Apple bloquea las aplicaciones que no pagan su cuota anual de desarrollador (99 USD/año). Solución:
 
-1. **Clic derecho:** Ve a `Aplicaciones`, haz clic derecho sobre "CuadernoDocente" y pulsa "Abrir"
-2. **Preferencias del Sistema:** Ve a Privacidad y Seguridad, busca el mensaje de bloqueo y pulsa "Abrir de todas formas"
-3. **Terminal:** Abre Terminal y ejecuta `sudo xattr -cr /Applications/CuadernoDocente.app`
+Abre Terminal (Cmd+Espacio, escribe "Terminal") y ejecuta:
+
+```bash
+sudo xattr -cr /Applications/CuadernoDocente.app
+```
 
 Solo necesitas hacer esto la primera vez. Instrucciones detalladas en la [sección 1.3](#13-macos).
 
