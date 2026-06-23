@@ -227,7 +227,7 @@ const CurriculumManager = (props: any) => {
                     let competenceId = links[0] || ''; 
                     
                     if (competenceNumberMatch && competenceNumberMatch[1]) {
-                        const targetScCode = `CEs ${competenceNumberMatch[1].trim()}`;
+                        const targetScCode = `CEs${competenceNumberMatch[1].trim()}`;
                         if (localScCodeToIdMap.has(targetScCode)) {
                             // Prioridad 1: Usar la competencia del archivo actual
                             competenceId = localScCodeToIdMap.get(targetScCode)!;
