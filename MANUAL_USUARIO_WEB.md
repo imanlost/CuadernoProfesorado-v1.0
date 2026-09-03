@@ -8,7 +8,7 @@
   <a href="http://creativecommons.org/licenses/by-nc/4.0/"><img src="https://licensebuttons.net/l/by-nc/4.0/88x31.png" alt="CC BY-NC 4.0"></a>
 </p>
 
-Guía completa para la versión web del Cuaderno del Profesorado, accesible desde cualquier navegador moderno en **[cuadernodocentev2.vercel.app**](https://cuadernodocentev2.vercel.app/).
+Guía completa para la versión web del Cuaderno del Profesorado, accesible desde cualquier navegador moderno en [**cuadernodocentev2.vercel.app**](https://cuadernodocentev2.vercel.app/).
 
 
 ## Índice
