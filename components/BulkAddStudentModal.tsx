@@ -71,20 +71,46 @@ const AcneaeSelector: React.FC<{ selected: Set<string>; onChange: (newSelection:
     );
 };
 
-
 const BulkAddStudentModal: React.FC<BulkAddStudentModalProps> = ({ isOpen, onClose, onSave }) => {
     const [students, setStudents] = useState<TempStudent[]>([]);
+    const [bulkText, setBulkText] = useState('');
 
+    useEffect(() => {
+        if (isOpen) {
+            setStudents([]);
+            setBulkText('');
+        }
+    }, [isOpen]);
+
+    const parseLines = (text: string): string[] =>
+        text.split(/\r\n|\n/).map(name => name.trim()).filter(name => name.length > 0);
+
+    // Añade líneas (escritas o pegadas) como filas, sin duplicar nombres repetidos.
+    const addLines = (text: string) => {
+        const names = parseLines(text);
+        if (names.length === 0) return;
+        setStudents(current => {
+            const existing = new Set(current.map(s => s.name.trim().toLowerCase()));
+            const fresh: TempStudent[] = [];
+            names.forEach((name, index) => {
+                const key = name.toLowerCase();
+                if (!existing.has(key)) {
+                    existing.add(key);
+                    fresh.push({ id: Date.now() + index + Math.random(), name, acneae: new Set<string>() });
+                }
+            });
+            return [...current, ...fresh];
+        });
+        setBulkText('');
+    };
+
+    // Si el pegado trae datos se añaden al momento; si el evento llega vacío
+    // (WebKitGTK) se deja pegar de forma nativa y se añade con el botón.
     const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-        const text = e.clipboardData.getData('text');
+        const text = e.clipboardData?.getData('text') ?? '';
+        if (!text.trim()) return;
         e.preventDefault();
-        const names = text.split('\n').map(name => name.trim()).filter(name => name.length > 0);
-        const newStudents: TempStudent[] = names.map((name, index) => ({
-            id: Date.now() + index,
-            name: name,
-            acneae: new Set<string>(),
-        }));
-        setStudents(current => [...current, ...newStudents]);
+        addLines(text);
     };
 
     const handleNameChange = (id: number, newName: string) => {
@@ -106,8 +132,8 @@ const BulkAddStudentModal: React.FC<BulkAddStudentModalProps> = ({ isOpen, onClo
                 name: s.name.trim(),
                 acneae: Array.from(s.acneae)
             }));
-        
-        if(studentsToSave.length > 0) {
+
+        if (studentsToSave.length > 0) {
             onSave(studentsToSave);
         }
         handleClose();
@@ -115,6 +141,7 @@ const BulkAddStudentModal: React.FC<BulkAddStudentModalProps> = ({ isOpen, onClo
 
     const handleClose = () => {
         setStudents([]);
+        setBulkText('');
         onClose();
     };
 
@@ -123,14 +150,31 @@ const BulkAddStudentModal: React.FC<BulkAddStudentModalProps> = ({ isOpen, onClo
             <div className="space-y-4">
                 <div>
                     <label htmlFor="student-paste-area" className="block text-sm font-medium text-slate-700">
-                        Pega aquí el listado de alumnado
+                        Pega o escribe aquí el listado de alumnado
                     </label>
                     <textarea
                         id="student-paste-area"
+                        value={bulkText}
+                        onChange={e => setBulkText(e.target.value)}
                         onPaste={handlePaste}
-                        placeholder="Copia y pega una lista de nombres aquí, uno por línea."
+                        placeholder="Un nombre por línea. Puedes pegarlo directamente o escribirlo a mano."
                         className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm min-h-[100px]"
                     />
+                    <div className="mt-2">
+                        <button
+                            type="button"
+                            onClick={() => addLines(bulkText)}
+                            disabled={parseLines(bulkText).length === 0}
+                            className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-700 rounded-md text-sm font-medium hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Añadir a la lista
+                        </button>
+                        {students.length > 0 && (
+                            <span className="ml-3 text-xs text-slate-500">
+                                {students.length} alumn@s en la lista
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {students.length > 0 && (

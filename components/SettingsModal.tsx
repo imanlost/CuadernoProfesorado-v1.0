@@ -9,6 +9,7 @@ import BulkAddStudentModal from './BulkAddStudentModal';
 import CurriculumManager from './CurriculumManager';
 import ProgrammingManager from './ProgrammingManager';
 import EvaluationToolManager from './EvaluationToolManager';
+import { confirmDialog } from './ConfirmDialog';
 
 
 interface SettingsModalProps {
@@ -185,8 +186,9 @@ const ClassManager: React.FC<{
         }));
     };
 
-    const handleDeleteStudent = (studentId: string) => {
-        if (!window.confirm('¿Seguro que quieres eliminar a este/a alumn@? Se perderán todas sus calificaciones.')) {
+    const handleDeleteStudent = async (studentId: string) => {
+        const ok = await confirmDialog('¿Seguro que quieres eliminar a este/a alumn@? Se perderán todas sus calificaciones.', { danger: true });
+        if (!ok) {
             return;
         }
         setClasses(prevClasses => prevClasses.map(c => {
@@ -216,8 +218,9 @@ const ClassManager: React.FC<{
         }
     };
     
-    const handleDeleteClass = (classId: string) => {
-        if (window.confirm('¿Seguro que quieres eliminar esta clase? Se perderá TODA la información asociada (alumnado, tareas, calificaciones).')) {
+    const handleDeleteClass = async (classId: string) => {
+        const ok = await confirmDialog('¿Seguro que quieres eliminar esta clase? Se perderá TODA la información asociada (alumnado, tareas, calificaciones).', { danger: true });
+        if (ok) {
             setClasses(prev => {
                 const newClasses = prev.filter(c => c.id !== classId);
                 if (activeClassId === classId) {
@@ -566,7 +569,7 @@ const CourseManager: React.FC<{
         setNewOtherName('');
     };
 
-    const handleDeleteCourse = (courseId: string) => {
+    const handleDeleteCourse = async (courseId: string) => {
         const courseToDelete = courses.find(c => c.id === courseId);
         if (!courseToDelete) return;
     
@@ -583,7 +586,8 @@ const CourseManager: React.FC<{
             confirmationMessage += `\n\nEsto también eliminará la entrada correspondiente de tu horario semanal.`;
         }
     
-        if (window.confirm(confirmationMessage)) {
+        const ok = await confirmDialog(confirmationMessage, { danger: true });
+        if (ok) {
             setCourses(prev => prev.filter(c => c.id !== courseId));
             setClasses(prev => prev.filter(c => c.courseId !== courseId));
         }
@@ -996,9 +1000,10 @@ const BackupManager: React.FC<any> = ({ importDatabase, exportDatabase, resetDat
         setNewWorkspaceName('');
     };
 
-    const handleDeleteWorkspace = (id: string) => {
+    const handleDeleteWorkspace = async (id: string) => {
         if (workspaces.length <= 1) return alert('No puedes borrar el único entorno de trabajo.');
-        if (!confirm('¿Estás seguro de borrar este Curso/Entorno? Esta acción no se puede deshacer y borrará todos los datos asociados a este curso en este dispositivo.')) return;
+        const ok = await confirmDialog('¿Estás seguro de borrar este Curso/Entorno? Esta acción no se puede deshacer y borrará todos los datos asociados a este curso en este dispositivo.', { danger: true });
+        if (!ok) return;
         
         const dbName = id === 'default' ? 'gradebook-sqlite-db' : `gradebook-sqlite-db-${id}`;
         const request = window.indexedDB.deleteDatabase(dbName);

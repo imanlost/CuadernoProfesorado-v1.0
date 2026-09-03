@@ -4,6 +4,7 @@ import Modal from './Modal';
 import { CalendarEvent } from './CalendarView'; 
 import { BookOpenIcon } from './Icons';
 import { PALETTE_COLORS } from '../constants';
+import { confirmDialog } from './ConfirmDialog';
 
 interface SessionActionModalProps {
   isOpen: boolean;
@@ -45,8 +46,9 @@ const SessionActionModal: React.FC<SessionActionModalProps> = ({ isOpen, onClose
     // We remove "Desplazar" from this modal because we are editing the DIARIO (Journal), not the PLAN (ProgrammingUnit).
     // Modifying the Plan structure (displacing sessions) should be done in the Planner.
 
-    const handleCancelClick = () => {
-        if (window.confirm(`¿Seguro que quieres cancelar esta sesión?\n\n- Clase: ${event.className}\n- Fecha: ${event.date.toLocaleDateString()}\n\nTodas las sesiones posteriores para esta clase se reorganizarán para ocupar este hueco.`)) {
+    const handleCancelClick = async () => {
+        const ok = await confirmDialog(`¿Seguro que quieres cancelar esta sesión?\n\n- Clase: ${event.className}\n- Fecha: ${event.date.toLocaleDateString()}\n\nTodas las sesiones posteriores para esta clase se reorganizarán para ocupar este hueco.`, { danger: true });
+        if (ok) {
             onCancelSession(event.classId, event.date);
             onClose();
         }

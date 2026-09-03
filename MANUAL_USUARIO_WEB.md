@@ -77,6 +77,8 @@ Al abrir la aplicación verás la pantalla principal con el **Calendario** como 
 
 - **⚙️**: panel de Ajustes con toda la configuración
 
+**Avisos y confirmaciones:** Los mensajes informativos (por ejemplo, "Clase creada" o "Notas guardadas") aparecen como **avisos flotantes** en la esquina superior derecha y desaparecen solos en unos segundos, sin interrumpirte. Cuando una acción va a **borrar datos** (un alumno, una clase, una tarea, el curso completo...), la aplicación te pide confirmación en una **ventana centrada**: pulsa **Cancelar** y no se borra nada; el botón de confirmar aparece en rojo cuando la acción no tiene vuelta atrás.
+
 ### ¿Dónde se guardan mis datos?
 
 Tus datos se almacenan automáticamente en el **almacenamiento interno del navegador** (IndexedDB). No necesitas guardar manualmente; cada cambio se persiste en menos de 2 segundos. Para mayor seguridad, puedes sincronizar con un archivo `.db` en tu disco (ver [Copia de Seguridad](#28-copia-de-seguridad-y-múltiples-cursos)).
@@ -133,7 +135,7 @@ Gestiona tus grupos y su alumnado:
 
 - **Manual**: escribe los nombres uno a uno en la tabla
 
-- **Carga masiva**: haz clic en **Añadir Alumnado en Lote**, pega una columna de nombres (copiada de Excel, Séneca o Raíces), un nombre por línea
+- **Carga masiva**: haz clic en **Añadir Alumnado en Lote**. En la ventana puedes **escribir los nombres a mano o pegarlos directamente** desde cualquier sitio (Excel, Séneca, Raíces, un correo...), uno por línea. Pulsa **Añadir a la lista** para pasarlos a la lista definitiva y revísala antes de terminar: puedes quitar los que no quieras. Si un nombre ya está en la clase no se añade dos veces. El botón final (**Añadir N Alumn@s**) crea a todos de una vez.
 
 **Etiquetas ACNEAE:** Haz clic en el botón **ACNEAE (N)** junto a cada alumno para añadir anotaciones de necesidades educativas (RE, ACS, TDAH, etc.). El contador indica cuántas etiquetas tiene ese alumno.
 
@@ -328,6 +330,24 @@ La vista principal de evaluación. Estructura:
 - **Recuperación de evaluación**: en la pestaña Final, crea una categoría tipo "Recuperación de Evaluación" y selecciona qué evaluaciones recupera. Solo aplica si el alumno estaba suspenso en esa evaluación
 
 **Desglose de nota**: haz clic en cualquier celda de nota para ver el desglose completo con la fórmula de cálculo.
+
+**Ficha del alumno/a**: haz clic sobre el **nombre** de un alumno para abrir su ficha. Además del resumen de sus calificaciones, tiene la pestaña **Anotaciones**, para llevar un seguimiento individual:
+
+- Escribe lo que quieras apuntar (ej. "entregó el trabajo tarde", "hablar con la familia") y pulsa **Añadir anotación**. Cada anotación guarda la fecha automáticamente.
+
+- Marca la casilla **Importante** si es un aviso que no quieres perder de vista: aparecerá un indicador **⚠** junto a su nombre en la lista de la clase y un aviso destacado en su ficha.
+
+- Puedes eliminar una anotación con el botón de papelera de su fila. Todo se guarda solo, junto con el resto de tus datos y en tus copias de seguridad.
+
+**Importar notas en bloque**: si tienes las notas de un examen en una hoja de cálculo o en un correo, no hace falta escribirlas una a una. Desde la tarea correspondiente, abre la importación en bloque:
+
+1. **Escribe o pega las notas, una por línea, en el mismo orden que la lista de clase** (ej. 7.5, 8, 6.25...)
+
+2. Pulsa **Asignar por orden a la lista** y aparecerá una previsualización
+
+3. En la previsualización puedes **editar cada nota** e incluso **cambiarla de alumno/a** si el orden no era el correcto, antes de guardar nada
+
+4. Pulsa **Guardar N Notas** para aplicarlas. Las notas fuera del rango 0–10 se marcan como inválidas y no se guardan
 
 ### 4.2 Informes competenciales
 

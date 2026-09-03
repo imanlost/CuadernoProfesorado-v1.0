@@ -29,10 +29,18 @@ export interface SpecificCompetence {
   weight?: number; // LOMLOE Pure: Percentage weight of this competence in the final grade
 }
 
+export interface StudentNote {
+  id: string;
+  date: string; // YYYY-MM-DD
+  text: string;
+  important: boolean;
+}
+
 export interface Student {
   id:string;
   name: string;
   acneae: string[]; // For educational needs tags: ['RE', 'ACS']
+  notes?: StudentNote[]; // Anotaciones por alumno (casos especiales, reuniones...)
 }
 
 export interface LinkedCriterion {

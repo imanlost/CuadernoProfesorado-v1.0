@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Course, KeyCompetence, OperationalDescriptor, SpecificCompetence, EvaluationCriterion, BasicKnowledge } from '../types';
 import { PencilIcon, TrashIcon, PlusIcon, ArrowDownTrayIcon } from './Icons';
+import { confirmDialog } from './ConfirmDialog';
 
 
 const Accordion: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -58,8 +59,9 @@ const CurriculumManager = (props: any) => {
         handleUpdate(type, newItem);
     };
     
-    const handleDelete = (type: 'ec' | 'sc' | 'kc' | 'sb', id: string) => {
-        if (!window.confirm("¿Seguro que quieres eliminar este elemento? Esta acción no se puede deshacer.")) {
+    const handleDelete = async (type: 'ec' | 'sc' | 'kc' | 'sb', id: string) => {
+        const ok = await confirmDialog("¿Seguro que quieres eliminar este elemento? Esta acción no se puede deshacer.", { danger: true });
+        if (!ok) {
             return;
         }
 
@@ -86,7 +88,7 @@ const CurriculumManager = (props: any) => {
     };
 
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!selectedCourseId) {
             alert("Por favor, selecciona un curso para el que importar el currículo.");
             if (event.target) event.target.value = '';
@@ -108,7 +110,8 @@ const CurriculumManager = (props: any) => {
             `- Los datos de otros cursos no se verán afectados.\n\n` +
             `¿Deseas continuar?`;
 
-        if (!window.confirm(confirmationMessage)) {
+        const ok = await confirmDialog(confirmationMessage, { danger: true });
+        if (!ok) {
              if (event.target) event.target.value = '';
              return;
         }
@@ -395,7 +398,7 @@ const CurriculumManager = (props: any) => {
         alert(`Currículo para '${courseName}' (${stage.toUpperCase()}) importado con éxito.\n\nSe ha aplicado una fusión inteligente de Descriptores Operativos para evitar duplicados entre cursos.`);
     };
 
-    const handleDeleteCurriculum = () => {
+    const handleDeleteCurriculum = async () => {
         if (!selectedCourseId) {
             alert("Por favor, selecciona un curso para definir el nivel educativo a eliminar (ESO o Bachillerato).");
             return;
@@ -424,7 +427,8 @@ const CurriculumManager = (props: any) => {
             `Si una Competencia Clave se queda sin descriptores, también será eliminada.\n` +
             `¿Estás absolutamente seguro de que quieres continuar?`;
 
-        if (window.confirm(confirmationMessage)) {
+        const ok = await confirmDialog(confirmationMessage, { danger: true });
+        if (ok) {
             const courseIdsSet = new Set(courseIdsForStage);
 
             setEvaluationCriteria((prev: EvaluationCriterion[]) => prev.filter(item => !courseIdsSet.has(item.courseId)));

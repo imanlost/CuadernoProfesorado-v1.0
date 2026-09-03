@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { EvaluationTool, Checklist, RatingScale, Rubric, RubricItem, EvaluationLevel, BaseEvaluationItem, EvaluationCriterion, Course } from '../types';
 import { PencilIcon, TrashIcon, PlusIcon, LinkIcon, TableCellsIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from './Icons';
 import Modal from './Modal';
+import { confirmDialog } from './ConfirmDialog';
 
 interface EvaluationToolManagerProps {
     evaluationTools: EvaluationTool[];
@@ -25,8 +26,9 @@ const EvaluationToolManager: React.FC<EvaluationToolManagerProps> = ({ evaluatio
         setIsModalOpen(false);
     };
 
-    const handleDelete = (toolId: string) => {
-        if (window.confirm("¿Seguro que quieres eliminar este instrumento? Esta acción no se puede deshacer.")) {
+    const handleDelete = async (toolId: string) => {
+        const ok = await confirmDialog("¿Seguro que quieres eliminar este instrumento? Esta acción no se puede deshacer.", { danger: true });
+        if (ok) {
             setEvaluationTools(prev => prev.filter(t => t.id !== toolId));
         }
     };

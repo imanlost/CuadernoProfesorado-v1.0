@@ -28,6 +28,12 @@ import SettingsModal from './components/SettingsModal';
 import ExportModal from './components/ExportModal';
 import CalendarView from './components/CalendarView';
 import Logo from './components/Logo';
+import { ToastContainer, installToastAlertBridge } from './components/Toast';
+import { ConfirmDialogHost, confirmDialog } from './components/ConfirmDialog';
+
+// Sustituye los alert() nativos (descentrados en WebKitGTK) por notificaciones
+// toast. Los confirm() destructivos usan ConfirmDialog (diálogo propio centrado).
+installToastAlertBridge();
 
 // Type for the entire application state
 interface AppState {
@@ -435,13 +441,15 @@ function useDatabase() {
     };
 
     const startNewCourse = useCallback(async () => {
-        const confirmed1 = window.confirm(
-            "¿Estás seguro de que deseas iniciar un nuevo curso escolar? Esta acción es destructiva y eliminará a todos los alumnos, calificaciones, tareas, y diarios, manteniendo sólo la estructura de cursos, currículo, rúbricas y festivos."
+        const confirmed1 = await confirmDialog(
+            "¿Estás seguro de que deseas iniciar un nuevo curso escolar? Esta acción es destructiva y eliminará a todos los alumnos, calificaciones, tareas, y diarios, manteniendo sólo la estructura de cursos, currículo, rúbricas y festivos.",
+            { danger: true }
         );
         if (!confirmed1) return;
 
-        const confirmed2 = window.confirm(
-            "Se recomienda encarecidamente que realices una copia de seguridad y exportes los informes del curso actual antes de continuar. Si ya lo has hecho o no deseas conservarlos, presiona Aceptar para proceder con la limpieza."
+        const confirmed2 = await confirmDialog(
+            "Se recomienda encarecidamente que realices una copia de seguridad y exportes los informes del curso actual antes de continuar. Si ya lo has hecho o no deseas conservarlos, presiona Aceptar para proceder con la limpieza.",
+            { danger: true }
         );
 
         if (!dbRef.current || !confirmed2) {
@@ -514,8 +522,9 @@ function useDatabase() {
     }, [appState]);
 
     const resetDatabase = useCallback(async () => {
-        const confirmed = window.confirm(
-            "¡ADVERTENCIA MÁXIMA! Esta acción es irreversible y eliminará ABSOLUTAMENTE TODOS los datos de la aplicación: clases, alumnos, calificaciones, currículo, planificaciones, TODO. La aplicación quedará completamente en blanco, lista para que introduzcas tus propios datos desde cero. ¿Estás COMPLETAMENTE seguro de que quieres borrar todo?"
+        const confirmed = await confirmDialog(
+            "¡ADVERTENCIA MÁXIMA! Esta acción es irreversible y eliminará ABSOLUTAMENTE TODOS los datos de la aplicación: clases, alumnos, calificaciones, currículo, planificaciones, TODO. La aplicación quedará completamente en blanco, lista para que introduzcas tus propios datos desde cero. ¿Estás COMPLETAMENTE seguro de que quieres borrar todo?",
+            { danger: true }
         );
 
         if (!dbRef.current || !confirmed) {
@@ -921,4 +930,16 @@ const App = () => {
     );
 };
 
-export default App;
+// Envuelve App para que el ToastContainer esté SIEMPRE montado, también en las
+// pantallas de carga, recuperación o error (que hacen return temprano en App).
+// ConfirmDialogHost: diálogos de confirmación propios (centrados) en vez de los
+// window.confirm nativos, que WebKitGTK muestra descentrados.
+const AppWithToasts: React.FC = () => (
+    <>
+        <App />
+        <ToastContainer />
+        <ConfirmDialogHost />
+    </>
+);
+
+export default AppWithToasts;

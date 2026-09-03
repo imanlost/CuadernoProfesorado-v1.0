@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { ClassData, Student, Assignment, Grade, EvaluationCriterion, Category, SpecificCompetence, KeyCompetence, ProgrammingUnit, EvaluationPeriod, AcademicConfiguration, EvaluationTool, Course } from '../types';
-import { PlusIcon, PencilIcon, TrashIcon, LinkIcon, BookOpenIcon, ClipboardDocumentIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpTrayIcon, DocumentDuplicateIcon, TableCellsIcon } from './Icons';
+import { PlusIcon, PencilIcon, TrashIcon, LinkIcon, BookOpenIcon, ClipboardDocumentIcon, ChevronLeftIcon, ChevronRightIcon, ArrowUpTrayIcon, DocumentDuplicateIcon, TableCellsIcon, ExclamationTriangleIcon } from './Icons';
 import AssignmentModal from './AssignmentModal';
 import GradeEntryModal from './GradeEntryModal';
 import CategoryModal from './CategoryModal';
@@ -11,6 +11,7 @@ import BulkGradeImportModal from './BulkGradeImportModal';
 import StudentSummaryModal from './StudentSummaryModal';
 import CopyAssignmentModal from './CopyAssignmentModal';
 import GradeBreakdownModal from './GradeBreakdownModal';
+import { confirmDialog } from './ConfirmDialog';
 
 
 interface GradebookTableProps {
@@ -38,6 +39,22 @@ const toYYYYMMDD = (date: Date): string => {
     const m = date.getUTCMonth() + 1;
     const d = date.getUTCDate();
     return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+};
+
+// Indicador discreto de aviso importante en la lista de alumnos: solo aparece
+// si el alumno tiene alguna anotación marcada como importante.
+const ImportantNoteIndicator: React.FC<{ student: Student }> = ({ student }) => {
+    const importantNotes = (student.notes || []).filter(n => n.important);
+    if (importantNotes.length === 0) return null;
+    const latest = importantNotes.sort((a, b) => b.date.localeCompare(a.date))[0];
+    return (
+        <span
+            className="flex items-center flex-shrink-0"
+            title={`Aviso importante (${latest.date}): ${latest.text}`}
+        >
+            <ExclamationTriangleIcon className="w-4 h-4 text-amber-500" />
+        </span>
+    );
 };
 
 const GradebookTable: React.FC<GradebookTableProps> = (props) => {
@@ -71,6 +88,15 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
 
   // State for Student Summary Modal
   const [selectedStudentForSummary, setSelectedStudentForSummary] = useState<Student | null>(null);
+
+  // Persiste cambios del alumno editado (p. ej. anotaciones) en la clase activa
+  const handleStudentUpdate = (updatedStudent: Student) => {
+    onUpdateClass({
+      ...classData,
+      students: classData.students.map(s => (s.id === updatedStudent.id ? updatedStudent : s)),
+    });
+    setSelectedStudentForSummary(updatedStudent);
+  };
 
   // State for Copy Assignment Modal
   const [assignmentToCopy, setAssignmentToCopy] = useState<Assignment | null>(null);
@@ -181,16 +207,18 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
     }
   };
 
-   const handleDeleteAssignment = (assignmentId: string) => {
-    if(window.confirm("¿Seguro que quieres eliminar esta tarea y todas sus calificaciones?")) {
+   const handleDeleteAssignment = async (assignmentId: string) => {
+    const ok = await confirmDialog("¿Seguro que quieres eliminar esta tarea y todas sus calificaciones?", { danger: true });
+    if (ok) {
         const updatedAssignments = classData.assignments.filter(a => a.id !== assignmentId);
         const updatedGrades = classData.grades.filter(g => g.assignmentId !== assignmentId);
         onUpdateClass({ ...classData, assignments: updatedAssignments, grades: updatedGrades });
     }
   };
 
-  const handleDeleteCategory = (categoryId: string) => {
-    if(window.confirm("¿Seguro que quieres eliminar esta categoría y TODAS sus tareas y calificaciones?")) {
+  const handleDeleteCategory = async (categoryId: string) => {
+    const ok = await confirmDialog("¿Seguro que quieres eliminar esta categoría y TODAS sus tareas y calificaciones?", { danger: true });
+    if (ok) {
         const updatedCategories = classData.categories.filter(c => c.id !== categoryId);
         const assignmentsToDelete = classData.assignments.filter(a => a.categoryId === categoryId);
         const assignmentsToDeleteIds = new Set(assignmentsToDelete.map(a => a.id));
@@ -444,12 +472,6 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       const activePeriod = evaluationPeriods.find(p => p.id === activePeriodId);
       
       if (!sourceClass || !sourcePeriod || !activePeriod) return;
-  
-      const message = sourceClass.id === classData.id
-        ? `¿Seguro que quieres copiar todas las categorías de "${sourcePeriod.name}" a "${activePeriod.name}"?`
-        : `¿Seguro que quieres copiar las categorías de "${sourceClass.name} - ${sourcePeriod.name}" a tu clase actual?`;
-
-      if (!window.confirm(message)) return;
   
       const sourceCategories = sourceClass.categories.filter(c => c.evaluationPeriodId === sourcePeriodId);
       const currentCategoryNames = new Set(categoriesForPeriod.map(c => c.name.toLowerCase()));
@@ -744,6 +766,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                         >
                             <AcneaeTag tags={student.acneae}/> 
                             <span className="truncate" title={student.name}>{student.name}</span>
+                            <ImportantNoteIndicator student={student} />
                         </button>
                     </div>
                 </td>
@@ -948,6 +971,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
             specificCompetences={specificCompetences}
             keyCompetences={keyCompetences}
             onStudentChange={(newStudent) => setSelectedStudentForSummary(newStudent)}
+            onStudentUpdate={handleStudentUpdate}
           />
       )}
       {assignmentToCopy && (

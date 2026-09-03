@@ -184,6 +184,8 @@ Al abrir el programa ves esto:
 
 - **⚙️**: el botón de Ajustes, donde configuras todo
 
+**Avisos y confirmaciones:** Los mensajes informativos (por ejemplo, "Clase creada" o "Notas guardadas") aparecen como **avisos flotantes** en la esquina superior derecha y desaparecen solos en unos segundos, sin interrumpirte. Cuando una acción va a **borrar datos** (un alumno, una clase, una tarea, el curso completo...), la aplicación te pide confirmación en una **ventana centrada dentro de la aplicación**: pulsa **Cancelar** y no se borra nada; el botón de confirmar aparece en rojo cuando la acción no tiene vuelta atrás.
+
 ## 5. Configuración inicial (Ajustes)
 
 Pulsa en el icono ⚙️ para abrir el panel de Ajustes. En la parte izquierda verás las secciones:
@@ -236,7 +238,7 @@ Creas tus grupos y metes a los alumnos.
 
 - **Uno a uno**: escribe los nombres en la tabla
 
-- **Todos de golpe**: copia una lista de nombres de tu Excel, de Séneca o de Raíces, pulsa **Añadir Alumnado en Lote** y pégalos (un nombre por línea)
+- **Todos de golpe**: pulsa **Añadir Alumnado en Lote**. En la ventana puedes **escribir los nombres a mano o pegarlos directamente** desde cualquier sitio (Excel, Séneca, Raíces, un correo...), uno por línea. Pulsa **Añadir a la lista** para pasarlos a la lista definitiva y revísala antes de terminar: puedes quitar los que no quieras. Si un nombre ya está en la clase no se añade dos veces. El botón final (**Añadir N Alumn@s**) crea a todos de una vez.
 
 **Alumnos con necesidades educativas (ACNEAE):** Pulsa el botón **ACNEAE** junto a un alumno para anotar sus necesidades (TDAH, adaptación, refuerzo...). El número indica cuántas anotaciones tiene.
 
@@ -384,6 +386,24 @@ Creas categorías con el botón ➕ y les das un peso. Dentro de cada categoría
 - **De una evaluación entera**: creas una categoría tipo "Recuperación" y eliges qué evaluación(es) recupera. Si el alumno aprueba la recuperación, le sube la nota de aquella evaluación
 
 **Ver desglose de nota:** Pulsa sobre cualquier nota numérica para ver cómo se ha calculado (la fórmula paso a paso).
+
+**Ficha del alumno/a:** Pulsa sobre el **nombre** de un alumno para abrir su ficha. Además del resumen de sus calificaciones, tiene la pestaña **Anotaciones**, para llevar un seguimiento individual:
+
+- Escribe lo que quieras apuntar (ej. "entregó el trabajo tarde", "hablar con la familia") y pulsa **Añadir anotación**. Cada anotación guarda la fecha automáticamente.
+
+- Marca la casilla **Importante** si es un aviso que no quieres perder de vista: aparecerá un indicador **⚠** junto a su nombre en la lista de la clase y un aviso destacado en su ficha.
+
+- Puedes eliminar una anotación con el botón de papelera de su fila. Todo se guarda solo, junto con el resto de tus datos y en tus copias de seguridad.
+
+**Importar notas en bloque:** Si tienes las notas de un examen en una hoja de cálculo o en un correo, no hace falta escribirlas una a una. Desde la tarea correspondiente, abre la importación en bloque:
+
+1. **Escribe o pega las notas, una por línea, en el mismo orden que la lista de clase** (ej. 7.5, 8, 6.25...)
+
+2. Pulsa **Asignar por orden a la lista** y aparecerá una previsualización
+
+3. En la previsualización puedes **editar cada nota** e incluso **cambiarla de alumno/a** si el orden no era el correcto, antes de guardar nada
+
+4. Pulsa **Guardar N Notas** para aplicarlas. Las notas fuera del rango 0–10 se marcan como inválidas y no se guardan
 
 ### 7.2 Informes
 

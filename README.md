@@ -69,10 +69,12 @@ A diferencia de las plataformas comerciales en la nube, este cuaderno:
 - **Exportación de informes** para actas de evaluación
 
 ### 👥 Gestión de Alumnado
-- **Carga masiva** de alumnado: pega una columna de nombres desde Excel, Séneca o Raíces
+- **Carga masiva** de alumnado: escribe o pega una columna de nombres (Excel, Séneca, Raíces), con revisión previa y sin duplicados
 - **Etiquetas ACNEAE**: anota necesidades educativas (RE, ACS, etc.) con contador por alumno
+- **Anotaciones por alumno** con fecha y marcador de aviso importante (⚠ en la lista y en la ficha)
 - **Vista de resumen** por alumno con todas sus calificaciones
 - **Desglose de nota** clicable: muestra la fórmula matemática exacta de cada calificación
+- **Avisos flotantes** no intrusivos y diálogos de confirmación centrados para las acciones que borran datos
 
 ### 📚 Gestión Curricular
 - **Importación CSV** del currículo LOMLOE con fusión inteligente de descriptores (evita duplicados)

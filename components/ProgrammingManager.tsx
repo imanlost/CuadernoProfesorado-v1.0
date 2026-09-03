@@ -4,6 +4,7 @@ import type { ProgrammingUnit, Course, SessionDetail, EvaluationCriterion, Basic
 import { PencilIcon, TrashIcon, PlusIcon, ArrowUpIcon, ArrowDownIcon, ArrowUpTrayIcon, ArrowDownTrayIcon } from './Icons';
 import { PALETTE_COLORS } from '../constants';
 import Modal from './Modal';
+import { confirmDialog } from './ConfirmDialog';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 interface ProgrammingManagerProps {
@@ -211,8 +212,9 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
         document.body.removeChild(link);
     };
     
-    const handleDelete = (unitId: string) => {
-        if (window.confirm("¿Seguro que quieres eliminar esta unidad de programación?")) {
+    const handleDelete = async (unitId: string) => {
+        const ok = await confirmDialog("¿Seguro que quieres eliminar esta unidad de programación?", { danger: true });
+        if (ok) {
             setUnits(prev => prev.filter(u => u.id !== unitId));
         }
     };
