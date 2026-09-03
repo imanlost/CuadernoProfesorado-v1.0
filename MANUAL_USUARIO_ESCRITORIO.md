@@ -489,19 +489,74 @@ Si vas a usar LOMLOE Puro, no te olvides de vincular cada tarea a los criterios 
 
 ## 10. Copias de seguridad
 
-Tus datos están en un archivo físico (ver [sección 3](#3-dónde-se-guardan-tus-datos)), así que hacer una copia de seguridad es muy fácil:
+Tus datos están en un archivo físico (ver [sección 3](#3-dónde-se-guardan-tus-datos)). La aplicación te ofrece dos tipos de copia:
+
+- **Copias manuales (.db)**: tú las generas cuando quieres, sin cifrar, y las guardas donde elijas (USB, carpeta de Drive, escritorio...).
+- **Copias automáticas cifradas (.db.gpg)**: la aplicación exporta tu base de datos automáticamente **al cerrarla y cada 30 minutos**, en archivos **cifrados** (nadie puede leerlos sin tu clave privada). Se guardan en la carpeta de backups que configures y siempre se conservan las 5 copias más recientes.
 
 ### Desde la aplicación
 
 En **Ajustes ⚙️ → Copia de Seguridad:**
 
-- **Descargar Copia (.db)**: te guarda una copia donde tú elijas (USB, carpeta de Drive, escritorio...)
+- **Descargar Copia (.db)**: te guarda una copia sin cifrar donde tú elijas (USB, carpeta de Drive, escritorio...)
 
-- **Cargar Copia (.db)**: restauras una copia anterior
+- **Cargar Copia (.db)**: restauras una copia anterior (sirve tanto para copias manuales como para copias automáticas que ya hayas descifrado, ver abajo)
 
 ### A mano
 
-Simplemente ve a la carpeta donde se guardan los datos ([ver sección 3](#3-dónde-se-guardan-tus-datos)), copia el archivo `cuaderno.db` y pégalo donde quieras.
+Simplemente ve a la carpeta donde se guardan los datos ([ver sección 3](#3-dónde-se-guardan-tus-datos)), copia el archivo `cuaderno.db` y pégalo donde quieras. Las copias automáticas (`.db.gpg`), en cambio, **no se pueden copiar y cargar directamente**: están cifradas y hay que descifrarlas antes (ver siguiente apartado).
+
+### Restaurar desde una copia cifrada (KeePass + terminal)
+
+Las copias automáticas `.db.gpg` están cifradas con tu **clave pública**. La aplicación no puede descifrarlas, y eso es a propósito: ni la aplicación ni la nube pueden leer tus datos sin tu permiso. Para restaurarlas necesitas la **clave privada**, que se guarda **solo en tu gestor de contraseñas (KeePass)**.
+
+**Requisitos:** KeePassXC (gratuito, para Windows/macOS/Linux) y GnuPG (Linux: `sudo apt install gnupg`; Windows: [GPG4Win](https://www.gpg4win.org/); macOS: `brew install gnupg`).
+
+#### Paso a paso — Linux y macOS
+
+**1. Extrae la clave privada de KeePass.** Abre tu archivo de contraseñas (`.kdbx`) en KeePassXC, busca la entrada de la aplicación (tiene un adjunto llamado `cuaderno-docente-clave-privada.asc`), ve a la pestaña **Adjuntos** y guarda ese archivo en tu equipo (ej. en tu carpeta personal). La contraseña de la clave está anotada en la misma entrada de KeePass.
+
+**2. Importa la clave privada en GnuPG.** Abre una terminal y ejecuta:
+
+```bash
+gpg --import ~/cuaderno-docente-clave-privada.asc
+```
+
+Te pedirá la contraseña de la clave (la de KeePass). Debe aparecer `claves secretas importadas: 1`.
+
+**3. Localiza la copia automática más reciente** en tu carpeta de backups:
+
+```bash
+ls -lt ~/ruta/a/tu/carpeta/de/backups/backup_*.db.gpg
+```
+
+El primer archivo de la lista es el más reciente.
+
+**4. Descifra la copia a un archivo `.db` normal:**
+
+```bash
+gpg --decrypt "~/ruta/a/tu/carpeta/de/backups/backup_TU_CURSO_2026-09-03_16-22-21.db.gpg" > ~/cuaderno_recuperado.db
+```
+
+**5. Restaura en la aplicación.** Abre la app → **Ajustes ⚙️ → Copia de Seguridad → Cargar Copia (.db)** → selecciona `~/cuaderno_recuperado.db`. Comprueba que aparecen tus datos (clases, alumnado, notas...).
+
+**6. Limpieza (importante).** No dejes la clave privada en el equipo: después de restaurar, bórrala. La clave **pública** permanece en el anillo, así que los próximos backups automáticos seguirán cifrándose sin problema.
+
+```bash
+rm ~/cuaderno-docente-clave-privada.asc
+gpg --delete-secret-keys "EL_CORREO_O_HUELLA_DE_TU_CLAVE"
+```
+
+#### Paso a paso — Windows
+
+Los pasos 1 y 2 son idénticos (KeePassXC → entrada de la aplicación → Adjuntos → guardar `cuaderno-docente-clave-privada.asc`). Para descifrar, abre PowerShell o cmd y ejecuta:
+
+```powershell
+gpg --import "%USERPROFILE%\cuaderno-docente-clave-privada.asc"
+gpg --decrypt "C:\ruta\a\tu\carpeta\de\backups\backup_....db.gpg" > "%USERPROFILE%\cuaderno_recuperado.db"
+```
+
+Después, restaura con **Ajustes ⚙️ → Copia de Seguridad → Cargar Copia (.db)** y haz la limpieza del paso 6.
 
 ### Empezar un curso nuevo
 
@@ -559,6 +614,8 @@ Solo necesitas hacer esto la primera vez. Instrucciones detalladas en la [secci�
 
 Copia el archivo `cuaderno.db` del ordenador antiguo al nuevo (ver [sección 3](#3-dónde-se-guardan-tus-datos)). Luego usa **Ajustes → Copia de Seguridad → Cargar Copia** para restaurarlo.
 
+Si lo que conservas son las **copias automáticas cifradas** (`.db.gpg`) del ordenador antiguo —por ejemplo, porque las tenías sincronizadas en la nube—, no las cargues directamente: primero descifra la más reciente con tu clave privada de KeePass siguiendo los pasos de la [sección 10](#10-copias-de-seguridad) (**Restaurar desde una copia cifrada**), y después impórtala con **Cargar Copia**.
+
 ### El calendario no pone clases en los días que espero
 
 Comprueba:
@@ -573,7 +630,7 @@ Comprueba:
 
 ### He perdido mis datos
 
-Si no tienes copia de seguridad, revisa si el archivo `cuaderno.db` sigue en la carpeta de datos ([sección 3](#3-dónde-se-guardan-tus-datos)). Si al desinstalar el programa elegiste "eliminar datos", lamentablemente se habrán borrado. **Haz copias de seguridad con regularidad.**
+Si no tienes copia de seguridad, revisa si el archivo `cuaderno.db` sigue en la carpeta de datos ([sección 3](#3-dónde-se-guardan-tus-datos)). Si al desinstalar el programa elegiste "eliminar datos", lamentablemente se habrán borrado. **Haz copias de seguridad con regularidad.** Recuerda que la aplicación también genera copias automáticas cifradas cada 30 minutos y al cerrarla: si conservas alguna (`.db.gpg`) en tu carpeta de backups o en la nube, puedes recuperar tus datos descifrándola con la clave privada de KeePass (ver [sección 10](#10-copias-de-seguridad)).
 
 ## Licencia
 
