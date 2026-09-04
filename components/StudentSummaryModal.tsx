@@ -1,8 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Modal from './Modal';
 import type { Student, StudentNote, ClassData, EvaluationPeriod, Assignment, EvaluationCriterion, SpecificCompetence, KeyCompetence, AcademicConfiguration, Category } from '../types';
 import AcneaeTag from './AcneaeTag';
+import AcneaeSelector from './AcneaeSelector';
 import { 
     calculateOverallFinalGradeForStudent, 
     calculateEvaluationPeriodGradeForStudent, 
@@ -455,11 +456,22 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
     const notes = student.notes || [];
     const [draft, setDraft] = useState('');
     const [draftImportant, setDraftImportant] = useState(false);
+    // Medidas ACNEAE en edición: parten de las actuales del alumno/a y se guardan al añadir la anotación
+    const [draftAcneae, setDraftAcneae] = useState<Set<string>>(new Set(student.acneae || []));
 
-    const persist = (nextNotes: StudentNote[]) => {
+    // Al cambiar de alumno/a (flechas ◀ ▶ o desplegable), recargar sus medidas actuales
+    useEffect(() => {
+        setDraftAcneae(new Set(student.acneae || []));
+    }, [student.id]);
+
+    const applyUpdate = (patch: Partial<Student>) => {
         if (onUpdateStudent) {
-            onUpdateStudent({ ...student, notes: nextNotes });
+            onUpdateStudent({ ...student, ...patch });
         }
+    };
+
+    const persistNotes = (nextNotes: StudentNote[]) => {
+        applyUpdate({ notes: nextNotes });
     };
 
     const addNote = () => {
@@ -471,17 +483,18 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
             text,
             important: draftImportant,
         };
-        persist([...notes, newNote]);
+        // Guarda la anotación y, a la vez, las medidas ACNEAE marcadas en el formulario
+        applyUpdate({ acneae: Array.from(draftAcneae), notes: [...notes, newNote] });
         setDraft('');
         setDraftImportant(false);
     };
 
     const toggleImportant = (noteId: string) => {
-        persist(notes.map(n => n.id === noteId ? { ...n, important: !n.important } : n));
+        persistNotes(notes.map(n => n.id === noteId ? { ...n, important: !n.important } : n));
     };
 
     const deleteNote = (noteId: string) => {
-        persist(notes.filter(n => n.id !== noteId));
+        persistNotes(notes.filter(n => n.id !== noteId));
     };
 
     const sortedNotes = useMemo(() =>
@@ -514,15 +527,21 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
                         <StarIcon className={`w-4 h-4 ${draftImportant ? 'text-amber-500' : 'text-slate-400'}`} />
                         Marcar como aviso importante
                     </label>
-                    <button
-                        onClick={addNote}
-                        disabled={!draft.trim()}
-                        className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md px-3 py-1.5 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <PlusIcon className="w-4 h-4" />
-                        Añadir anotación
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <AcneaeSelector selected={draftAcneae} onChange={setDraftAcneae} />
+                        <button
+                            onClick={addNote}
+                            disabled={!draft.trim()}
+                            className="flex items-center gap-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md px-3 py-1.5 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                            Añadir anotación
+                        </button>
+                    </div>
                 </div>
+                <p className="text-xs text-slate-400 mt-2">
+                    Las medidas ACNEAE marcadas (RE, REP, PAC...) quedan guardadas para el/la alumno/a al añadir la anotación.
+                </p>
             </div>
 
             {/* Historial */}

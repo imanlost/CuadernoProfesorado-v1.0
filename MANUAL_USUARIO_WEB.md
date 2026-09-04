@@ -137,7 +137,7 @@ Gestiona tus grupos y su alumnado:
 
 - **Carga masiva**: haz clic en **Añadir Alumnado en Lote**. En la ventana puedes **escribir los nombres a mano o pegarlos directamente** desde cualquier sitio (Excel, Séneca, Raíces, un correo...), uno por línea. Pulsa **Añadir a la lista** para pasarlos a la lista definitiva y revísala antes de terminar: puedes quitar los que no quieras. Si un nombre ya está en la clase no se añade dos veces. El botón final (**Añadir N Alumn@s**) crea a todos de una vez.
 
-**Etiquetas ACNEAE:** Haz clic en el botón **ACNEAE (N)** junto a cada alumno para añadir anotaciones de necesidades educativas (RE, ACS, TDAH, etc.). El contador indica cuántas etiquetas tiene ese alumno.
+**Etiquetas ACNEAE:** Haz clic en el botón **ACNEAE (N)** junto a cada alumno para añadir anotaciones de necesidades educativas (RE, ACS, TDAH, etc.). El contador indica cuántas etiquetas tiene ese alumno. Junto a cada alumno aparece una **bolita de color** con la medida más prioritaria: PAC/PRE (rojo), RE ACA/RE EC/RE (azul), ACS (verde), ABS (gris), REP o repetidor/a (violeta) y el resto (amarillo). Si un alumno tiene varias medidas, la bolita muestra la de mayor prioridad; **REP (repetidor/a) es siempre la última**, de modo que solo se ve cuando el alumno no tiene ninguna otra medida.
 
 - Usa las flechas ▲▼ para reordenar al alumnado
 
@@ -334,6 +334,8 @@ La vista principal de evaluación. Estructura:
 **Ficha del alumno/a**: haz clic sobre el **nombre** de un alumno para abrir su ficha. Además del resumen de sus calificaciones, tiene la pestaña **Anotaciones**, para llevar un seguimiento individual:
 
 - Escribe lo que quieras apuntar (ej. "entregó el trabajo tarde", "hablar con la familia") y pulsa **Añadir anotación**. Cada anotación guarda la fecha automáticamente.
+
+- Mientras escribes la anotación puedes **marcar sus medidas ACNEAE** con el selector **ACNEAE (N)** que hay junto al botón: arranca con las medidas que ya tiene el alumno/a y, al añadir la anotación, quedan guardadas (p. ej. si en una reunión de casos te informan de que un alumno es repetidor, marcas **REP** y escribes el motivo de una vez).
 
 - Marca la casilla **Importante** si es un aviso que no quieres perder de vista: aparecerá un indicador **⚠** junto a su nombre en la lista de la clase y un aviso destacado en su ficha.
 

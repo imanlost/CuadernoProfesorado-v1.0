@@ -34,6 +34,8 @@ const getTagStyle = (tag: string | null): { bg: string, text: string } => {
             return { bg: 'bg-red-500', text: 'text-white' };
         case 'RE':
              return { bg: 'bg-blue-500', text: 'text-white' };
+        case 'REP':
+            return { bg: 'bg-violet-500', text: 'text-white' };
         case 'ACS':
             return { bg: 'bg-green-500', text: 'text-white' };
         case 'ABS':
