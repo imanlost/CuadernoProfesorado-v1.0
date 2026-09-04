@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import Modal from './Modal';
 import type { Student, StudentNote, ClassData, EvaluationPeriod, Assignment, EvaluationCriterion, SpecificCompetence, KeyCompetence, AcademicConfiguration, Category } from '../types';
 import AcneaeTag from './AcneaeTag';
@@ -456,13 +456,6 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
     const notes = student.notes || [];
     const [draft, setDraft] = useState('');
     const [draftImportant, setDraftImportant] = useState(false);
-    // Medidas ACNEAE en edición: parten de las actuales del alumno/a y se guardan al añadir la anotación
-    const [draftAcneae, setDraftAcneae] = useState<Set<string>>(new Set(student.acneae || []));
-
-    // Al cambiar de alumno/a (flechas ◀ ▶ o desplegable), recargar sus medidas actuales
-    useEffect(() => {
-        setDraftAcneae(new Set(student.acneae || []));
-    }, [student.id]);
 
     const applyUpdate = (patch: Partial<Student>) => {
         if (onUpdateStudent) {
@@ -474,6 +467,11 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
         applyUpdate({ notes: nextNotes });
     };
 
+    // Guarda las medidas ACNEAE al momento, en cuanto se marca o desmarca una casilla
+    const handleAcneaeChange = (newSelection: Set<string>) => {
+        applyUpdate({ acneae: Array.from(newSelection) });
+    };
+
     const addNote = () => {
         const text = draft.trim();
         if (!text) return;
@@ -483,8 +481,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
             text,
             important: draftImportant,
         };
-        // Guarda la anotación y, a la vez, las medidas ACNEAE marcadas en el formulario
-        applyUpdate({ acneae: Array.from(draftAcneae), notes: [...notes, newNote] });
+        persistNotes([...notes, newNote]);
         setDraft('');
         setDraftImportant(false);
     };
@@ -528,7 +525,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
                         Marcar como aviso importante
                     </label>
                     <div className="flex items-center gap-2 flex-wrap">
-                        <AcneaeSelector selected={draftAcneae} onChange={setDraftAcneae} />
+                        <AcneaeSelector selected={new Set(student.acneae || [])} onChange={handleAcneaeChange} />
                         <button
                             onClick={addNote}
                             disabled={!draft.trim()}
@@ -540,7 +537,7 @@ const NotesTab: React.FC<NotesTabProps> = ({ student, onUpdateStudent }) => {
                     </div>
                 </div>
                 <p className="text-xs text-slate-400 mt-2">
-                    Las medidas ACNEAE marcadas (RE, REP, PAC...) quedan guardadas para el/la alumno/a al añadir la anotación.
+                    Las medidas ACNEAE (RE, REP, PAC...) se guardan automáticamente en cuanto las marcas o desmarcas.
                 </p>
             </div>
 

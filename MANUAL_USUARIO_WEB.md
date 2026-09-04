@@ -335,7 +335,7 @@ La vista principal de evaluación. Estructura:
 
 - Escribe lo que quieras apuntar (ej. "entregó el trabajo tarde", "hablar con la familia") y pulsa **Añadir anotación**. Cada anotación guarda la fecha automáticamente.
 
-- Mientras escribes la anotación puedes **marcar sus medidas ACNEAE** con el selector **ACNEAE (N)** que hay junto al botón: arranca con las medidas que ya tiene el alumno/a y, al añadir la anotación, quedan guardadas (p. ej. si en una reunión de casos te informan de que un alumno es repetidor, marcas **REP** y escribes el motivo de una vez).
+- Mientras escribes la anotación puedes **marcar sus medidas ACNEAE** con el selector **ACNEAE (N)** que hay junto al botón: **se guardan automáticamente en cuanto marcas o desmarcas una casilla**, sin necesidad de escribir nada (p. ej. si en una reunión de casos te informan de que un alumno es repetidor, abres su ficha, marcas **REP** y ya queda guardado; puedes añadir después una anotación con el motivo si quieres).
 
 - Marca la casilla **Importante** si es un aviso que no quieres perder de vista: aparecerá un indicador **⚠** junto a su nombre en la lista de la clase y un aviso destacado en su ficha.
 
