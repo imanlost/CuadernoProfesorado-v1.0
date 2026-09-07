@@ -1,5 +1,11 @@
 # Changelog - Cuaderno del Profesor
 
+## [2026-09-07] - v2.15: Colores por nivel en horario y calendario, exportación del horario (JSON/CSV) y borrado de planificación
+- **Añadido**: Las clases se colorean automáticamente **por nivel educativo** (azules 1º ESO, naranjas 2º ESO, verdes 3º ESO, violetas 4º ESO, amarillos 1º Bachillerato, rojos 2º Bachillerato) en el horario semanal, la vista Semana y el calendario de sesiones, con **tonalidades diferenciadas** entre grupos del mismo nivel (se alterna un tono claro y otro medio y se amplía la gama de matices).
+- **Añadido**: **Selector de color por clase** en Ajustes > Clases y Alumnado (botón «Automático» restaura el color de su nivel; la bola de color junto a la clase muestra el color activo).
+- **Añadido**: Botones **«Exportar Horario (JSON)»** y **«Exportar CSV»** en Ajustes > Horario Semanal. El JSON (esquema v1, incluye la versión de la app en el campo `generador`) se importa directamente en la app móvil MiHorario y en otros programas de horarios; el CSV (cabecera Día/Periodo/Hora/Clase/Nivel/Materia) sirve para hojas de cálculo. En la versión de escritorio se guarda con el diálogo nativo de archivos.
+- **Añadido**: Botón **«Borrar planificación»** en la pestaña Programación (UUDD): elimina todas las unidades didácticas de la asignatura seleccionada, con confirmación.
+
 ## [2026-09-04] - v2.14: Guardado automático de medidas ACNEAE + limpieza de PDFs
 - **Corregido**: Las medidas ACNEAE del selector de la pestaña Anotaciones se guardan automáticamente en cuanto se marca o desmarca una casilla, sin necesidad de añadir una anotación con texto (antes solo se persistían al pulsar «Añadir anotación», que exigía comentario).
 - **Documentación**: Eliminados los PDFs obsoletos de los manuales del repositorio; la documentación viva son los `.md` (el usuario genera los PDFs localmente).

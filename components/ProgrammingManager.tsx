@@ -219,6 +219,19 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
         }
     };
 
+    const handleDeletePlanning = async () => {
+        if (!selectedCourse || filteredUnits.length === 0) return;
+        const courseLabel = `${selectedCourse.level} - ${selectedCourse.subject}`;
+        const plural = filteredUnits.length === 1 ? 'unidad didáctica' : 'unidades didácticas';
+        const ok = await confirmDialog(
+            `¿Seguro que quieres borrar TODA la planificación de ${courseLabel}? Se eliminarán sus ${filteredUnits.length} ${plural} (con criterios, saberes y detalle de sesiones). Esta acción no se puede deshacer.`,
+            { danger: true }
+        );
+        if (ok) {
+            setUnits(prev => prev.filter(u => u.courseId !== selectedCourseId));
+        }
+    };
+
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -377,6 +390,15 @@ const ProgrammingManager: React.FC<ProgrammingManagerProps> = ({ courses, units,
                                 <button onClick={() => setUnitEditorState({ mode: 'create'})} disabled={!!unitEditorState} className="inline-flex items-center justify-center py-2 px-3 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed">
                                     <PlusIcon className="w-4 h-4 mr-1"/>
                                     Nueva Unidad
+                                </button>
+                                <button
+                                    onClick={handleDeletePlanning}
+                                    disabled={filteredUnits.length === 0}
+                                    className="inline-flex items-center justify-center py-2 px-3 border border-red-300 shadow-sm text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Borrar todas las unidades didácticas del curso seleccionado"
+                                >
+                                    <TrashIcon className="w-4 h-4 mr-1"/>
+                                    Borrar planificación
                                 </button>
                             </div>
                         </div>

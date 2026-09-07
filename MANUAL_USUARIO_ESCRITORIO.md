@@ -252,6 +252,10 @@ Indica en qué días y horas das cada clase:
 
 Cuando pongas sesiones en el calendario, se colocarán automáticamente en los días que tienes clase con ese grupo.
 
+**Colores de las clases:** cada clase tiene un color automático según su nivel educativo (azules 1º ESO, naranjas 2º ESO, verdes 3º ESO, violetas 4º ESO, amarillos 1º Bachillerato, rojos 2º Bachillerato), con tonalidades distintas entre grupos del mismo nivel. Puedes cambiarlo en **Ajustes > Clases y Alumnado** (lápiz de edición → elegir color, o **Automático** para restaurar el del nivel). Ese color se usa en el horario, la vista Semana y el calendario.
+
+**Exportar el horario:** los botones **«Exportar Horario (JSON)»** y **«Exportar CSV»** de esta sección guardan el horario con el diálogo nativo del sistema. El JSON (esquema v1, incluye la versión de la app en `generador`) se importa en la app móvil **MiHorario** y en otros programas de horarios; el CSV sirve para hojas de cálculo.
+
 ### 5.5 Gestionar Currículo
 
 Esta sección es muy importante: aquí metes los elementos curriculares de la LOMLOE.
@@ -311,6 +315,8 @@ Creas tus temas y los programas en el calendario:
 4. Elige qué saberes y criterios trabaja
 
 Las unidades se pueden arrastrar para cambiar el orden.
+
+Para vaciar la planificación de una asignatura, usa el botón **«Borrar planificación»** junto al selector de asignatura (pide confirmación antes de eliminar todas sus unidades).
 
 ### 5.7 Instrumentos de Evaluación
 

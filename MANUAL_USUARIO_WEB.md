@@ -153,6 +153,13 @@ Configura tu horario para que el calendario sepa qué días tienes clase con cad
 
 3. Las clases aparecerán automáticamente en el calendario los días que correspondan
 
+**Colores de las clases:** cada clase recibe automáticamente un **color según su nivel educativo** (azules para 1º ESO, naranjas para 2º ESO, verdes para 3º ESO, violetas para 4º ESO, amarillos para 1º Bachillerato y rojos para 2º Bachillerato). Los grupos del mismo nivel usan **tonalidades distintas** para diferenciarse a simple vista. Puedes cambiar el color de una clase concreta en **Ajustes > Clases y Alumnado**: pulsa el lápiz de edición, elige un color y guarda; el botón **Automático** restaura el color de su nivel. La **bola de color** junto al nombre de la clase muestra el color activo, que es el mismo que verás en el horario semanal, la vista Semana y el calendario.
+
+**Exportar el horario:** en la parte superior del gestor de horario hay dos botones:
+
+- **Exportar Horario (JSON)**: descarga el horario en el esquema v1 (incluye la versión de la aplicación en el campo `generador`). Este archivo se importa directamente en la **app móvil MiHorario** y sirve para cualquier otro programa de horarios que lea JSON.
+- **Exportar CSV**: descarga una tabla (Día; Periodo; Hora; Clase; Nivel; Materia) para hojas de cálculo u otros programas de timetable. En la versión de escritorio, ambos botones abren el **diálogo nativo de guardado** del sistema.
+
 ### 2.5 Gestionar Currículo
 
 El corazón de la evaluación competencial. Aquí importas y gestionas todos los elementos curriculares de la LOMLOE:
@@ -206,6 +213,8 @@ Crea tus UD (Unidades Didácticas o Situaciones de Aprendizaje):
 3. Opcionalmente, define una **fecha de inicio** fija, o deja que el calendario la coloque secuencialmente
 
 Las UD son **arrastrables** (drag & drop) para reordenarlas. También puedes marcarlas como **impartidas** ✅.
+
+Si quieres empezar de cero con una asignatura, usa el botón **«Borrar planificación»** (junto al selector de asignatura): elimina todas las unidades didácticas de la asignatura seleccionada, previa confirmación.
 
 ### 2.7 Instrumentos de Evaluación
 

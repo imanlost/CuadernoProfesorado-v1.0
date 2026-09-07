@@ -580,7 +580,7 @@ type View = 'calendar' | 'gradebook' | 'journal' | 'criteria' | 'competences' | 
 
 // Versión de la aplicación (web). Se muestra bajo el nombre en el header.
 // REGLA: actualizar en cada release (ver skill cuaderno-profesorado-release).
-const APP_VERSION = '2.14';
+const APP_VERSION = '2.15';
 
 const App = () => {
     const { appState, loading, error, updateState, importDatabase, exportDatabase, resetDatabase, startNewCourse, saveToLocalFile, openLocalFile, disconnectLocalFile, requestFilePermission, fileHandle, filePermissionGranted } = useDatabase();
@@ -919,6 +919,7 @@ const App = () => {
                 onRequestFilePermission={requestFilePermission}
                 localFileName={fileHandle?.name || null}
                 filePermissionGranted={filePermissionGranted}
+                appVersion={APP_VERSION}
             />
 
             <ExportModal

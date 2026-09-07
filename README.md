@@ -37,6 +37,8 @@ A diferencia de las plataformas comerciales en la nube, este cuaderno:
 - **Unidades Didácticas (UD)** arrastrables con número de sesiones y vinculación a saberes básicos
 - **Colocación automática** de sesiones en días lectivos, esquivando fines de semana y festivos
 - **Sesiones coloreables** para identificar visualmente tipos de clase
+- **Colores por nivel educativo**: cada clase recibe un color según su nivel (1º-4º ESO y Bachillerato) con tonalidades diferenciadas por grupo, personalizable por clase y usado en horario, vista Semana y calendario
+- **Exportación del horario** en JSON (esquema v1, importable en la app móvil MiHorario y otros programas de horarios) y en CSV (hojas de cálculo)
 
 ### 🧮 Evaluación Competencial LOMLOE
 - **Dos modos de cálculo de nota final**:

@@ -154,6 +154,7 @@ export interface ClassData {
   id: string;
   name: string;
   courseId: string;
+  color?: string; // Color manual (hex) de la clase en horario/calendario. Si falta, se asigna automático por gama de nivel.
   students: Student[];
   categories: Category[];
   assignments: Assignment[];

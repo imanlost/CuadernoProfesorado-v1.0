@@ -4,6 +4,9 @@ import type { ProgrammingUnit, Course, AcademicConfiguration, ClassData, Journal
 import { ChevronLeftIcon, ChevronRightIcon, CalendarDaysIcon, ViewWeekIcon, ViewDayIcon, PencilIcon, ClipboardDocumentIcon, PlusIcon, BookOpenIcon } from './Icons';
 import SessionActionModal from './SessionActionModal';
 import CalendarTaskModal from './CalendarTaskModal';
+// Colores de las clases: color manual (ClassData.color) o gama automática por nivel
+// con matices por grupo. Mismo criterio que el horario descargable.
+import { getContrastingTextColor, buildClassColorMap, OTHER_OCCUPATION_COLOR } from '../services/classColors';
 
 export interface CalendarEvent {
     id: string;
@@ -73,58 +76,7 @@ const toYYYYMMDD_UTC = (date: Date): string => {
 
 
 // --- Color Helper ---
-const getContrastingTextColor = (hexcolor: string): string => {
-    if (!hexcolor) return '#000000';
-    if (hexcolor.startsWith('#')) {
-        hexcolor = hexcolor.slice(1);
-    }
-    if (hexcolor.length === 3) {
-        hexcolor = hexcolor.split('').map(char => char + char).join('');
-    }
-    const r = parseInt(hexcolor.substring(0, 2), 16);
-    const g = parseInt(hexcolor.substring(2, 4), 16);
-    const b = parseInt(hexcolor.substring(4, 6), 16);
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return (yiq >= 128) ? '#000000' : '#FFFFFF';
-};
-
-const getClassColor = (courseLevel: string, className: string): { backgroundColor: string, textColor: string, borderColor: string } => {
-    let hue: number;
-
-    if (/1º\s*ESO/i.test(courseLevel)) hue = 210;        // Blue tones
-    else if (/2º\s*ESO/i.test(courseLevel)) hue = 30;   // Orange tones
-    else if (/3º\s*ESO/i.test(courseLevel)) hue = 140;  // Green tones
-    else if (/4º\s*ESO/i.test(courseLevel)) hue = 270;  // Violet tones
-    else if (/1º\s*Bach/i.test(courseLevel)) hue = 55;  // Yellow tones
-    else if (/2º\s*Bach/i.test(courseLevel)) hue = 0;    // Red tones
-    else { // Fallback for other courses
-        let hash = 0;
-        for (let i = 0; i < (courseLevel || '').length; i++) {
-            hash = courseLevel.charCodeAt(i) + ((hash << 5) - hash);
-            hash = hash & hash;
-        }
-        hue = Math.abs(hash % 360);
-    }
-
-    // Variation from class name for saturation and lightness
-    let classHash = 0;
-    for (let i = 0; i < className.length; i++) {
-        classHash = className.charCodeAt(i) + ((classHash << 5) - classHash);
-    }
-    // Make variation more pronounced
-    const saturationOffset = Math.abs(classHash % 20); // 0-19
-    const lightnessOffset = Math.abs(Math.floor(classHash / 20) % 15); // 0-14
-
-    const saturation = 65 + saturationOffset; // e.g., 65-84%
-    const lightness = 88 - lightnessOffset;   // e.g., 88-74%
-
-    return {
-        backgroundColor: `hsla(${hue}, ${saturation}%, ${lightness}%, 1)`,
-        textColor: `hsla(${hue}, 60%, 30%, 1)`, // slightly darker text for better contrast
-        borderColor: `hsla(${hue}, ${saturation-10}%, ${lightness-10}%, 1)`,
-    };
-};
-
+// (Los colores de las clases se resuelven en services/classColors.ts; ver imports arriba.)
 
 const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, academicConfiguration, classes, journalEntries, onUpdateClass, criteria, specificCompetences, keyCompetences, onSaveJournalEntry }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -167,6 +119,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
 
         const generatedEvents: CalendarEvent[] = [];
         const sessionEventMap = new Map<string, CalendarEvent>(); // Map Key: classId-YYYY-MM-DD (to merge assignments)
+        // Colores por clase (manual o gama automática por nivel), mismo criterio que el horario descargable
+        const colorMap = buildClassColorMap(classes, courses);
 
         const { academicYearStart, academicYearEnd, periods = [] } = academicConfiguration;
         const startDate = new Date(academicYearStart + 'T00:00:00Z');
@@ -187,7 +141,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
             const course = courses.find(c => c.id === classData.courseId);
             if (!course || !classData.schedule || classData.schedule.length === 0) return;
 
-            const courseColor = getClassColor(course.level, classData.name);
+            const courseColor = colorMap.get(classData.id) || OTHER_OCCUPATION_COLOR;
             const skippedDaysSet = new Set(classData.skippedDays || []);
 
             // Filter sessions for this specific class from the global school days
@@ -301,7 +255,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
             if (!classData.assignments) return;
             
             const course = courses.find(c => c.id === classData.courseId);
-            const courseColor = course ? getClassColor(course.level, classData.name) : { backgroundColor: '#ddd', textColor: '#333', borderColor: '#ccc' };
+            const courseColor = course ? (colorMap.get(classData.id) || OTHER_OCCUPATION_COLOR) : { backgroundColor: '#ddd', textColor: '#333', borderColor: '#ccc' };
 
             classData.assignments.forEach(assignment => {
                 if (assignment.date) {
