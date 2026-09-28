@@ -212,9 +212,9 @@ const ClassJournal: React.FC<ClassJournalProps> = ({ classes, entries, onSave, a
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Header: estatico, fuera del area de scroll del diario (siempre visible) */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 mb-6">
         <div>
             <h2 className="text-xl font-bold text-slate-800">Diario de Clase</h2>
             <p className="text-sm text-slate-500">Agenda diaria y seguimiento de sesiones.</p>
@@ -242,8 +242,9 @@ const ClassJournal: React.FC<ClassJournalProps> = ({ classes, entries, onSave, a
         </div>
       </div>
 
-      {/* Timeline / List */}
-      <div className="space-y-4">
+      {/* Timeline / List: unica zona con scroll de la vista */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="space-y-4 pb-2">
         {scheduledClasses.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-xl border border-dashed border-slate-300">
                 <p className="text-slate-500 text-lg">No hay clases programadas para este día ({new Date(selectedDate).toLocaleDateString('es-ES', { weekday: 'long' })}).</p>
@@ -341,6 +342,7 @@ const ClassJournal: React.FC<ClassJournalProps> = ({ classes, entries, onSave, a
               </button>
           </div>
       )}
+      </div>
     </div>
   );
 };

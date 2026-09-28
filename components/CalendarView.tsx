@@ -438,6 +438,34 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
 
     const periodColors = ['bg-violet-100', 'bg-emerald-100', 'bg-amber-100'];
 
+    // Franja de dias de la semana (vista Mes): vive FUERA del area de scroll del
+    // calendario, junto a la cabecera, para que quede siempre visible.
+    const renderMonthWeekdayStrip = () => (
+        <div className="grid grid-cols-5 text-center font-semibold text-sm text-slate-600 border-b bg-white shadow-sm">
+            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map(d => <div key={d} className="py-2">{d}</div>)}
+        </div>
+    );
+
+    // Franja con las fechas de la semana (vista Semana), tambien fuera del scroll.
+    const renderWeekDatesStrip = () => {
+        const weekStart = startOfWeekUTC(currentDate);
+        const stripDays = Array.from({ length: 5 }).map((_, i) => addDaysUTC(weekStart, i));
+        const today = new Date();
+        return (
+            <div className="grid grid-cols-5 text-center font-semibold text-sm text-slate-600 border-b bg-white">
+                {stripDays.map(d => {
+                    const isToday = d.getUTCFullYear() === today.getUTCFullYear() && d.getUTCMonth() === today.getUTCMonth() && d.getUTCDate() === today.getUTCDate();
+                    return (
+                        <div key={d.toISOString()} className="py-2 border-r">
+                            <div className="text-xs">{d.toLocaleString('es-ES', { weekday: 'short', timeZone: 'UTC' })}</div>
+                            <div className={`text-xl mt-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>{d.getUTCDate()}</div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     const renderMonthView = () => {
         const monthStart = startOfMonthUTC(currentDate);
         const monthEnd = endOfMonthUTC(currentDate);
@@ -453,11 +481,6 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
 
         return (
             <div>
-                {/* Fixed: Sticky Header for days of week */}
-                <div className="grid grid-cols-5 text-center font-semibold text-sm text-slate-600 border-b sticky top-0 bg-white z-10 shadow-sm">
-                    {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map(d => <div key={d} className="py-2">{d}</div>)}
-                </div>
-                {/* Fixed: Auto rows and removed fixed height to allow full scrolling */}
                 <div className="grid grid-cols-5 auto-rows-fr">
                     {days.map(d => {
                          const dayOfWeek = d.getUTCDay();
@@ -658,22 +681,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
         const days = Array.from({ length: 5 }).map((_, i) => addDaysUTC(weekStart, i));
 
         return (
-            <div>
-                {/* Modified to 5 cols */}
-                <div className="grid grid-cols-5 text-center font-semibold text-sm text-slate-600 border-b">
-                    {days.map(d => {
-                        const today = new Date();
-                        const isToday = d.getUTCFullYear() === today.getUTCFullYear() && d.getUTCMonth() === today.getUTCMonth() && d.getUTCDate() === today.getUTCDate();
-                        return (
-                            <div key={d.toISOString()} className="py-2 border-r">
-                                <div className="text-xs">{d.toLocaleString('es-ES', { weekday: 'short', timeZone: 'UTC' })}</div>
-                                <div className={`text-xl mt-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>{d.getUTCDate()}</div>
-                            </div>
-                        )
-                    })}
-                </div>
-                {/* Modified to 5 cols */}
-                <div className="grid grid-cols-5 h-[70vh]">
+            <div className="h-full">
+                <div className="grid grid-cols-5 h-full">
                      {days.map(d => (
                         <React.Fragment key={d.toISOString()}>
                             {renderGenericDayColumn(d)}
@@ -691,7 +700,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
         const dayOfWeek = currentDate.getUTCDay();
         const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
         return (
-            <div className={`p-4 h-[70vh] overflow-y-auto ${isDayHoliday || isWeekend ? 'bg-rose-50' : ''}`}>
+            <div className={`p-4 h-full overflow-y-auto ${isDayHoliday || isWeekend ? 'bg-rose-50' : ''}`}>
                  <h3 className="text-lg font-bold text-slate-700 mb-4">{currentDate.toLocaleString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })}</h3>
                  {(isDayHoliday || isWeekend) && <p className="text-center font-semibold text-rose-700 mb-4">Día no lectivo</p>}
                  {eventsForDay.length > 0 ? (
@@ -783,11 +792,19 @@ const CalendarView: React.FC<CalendarViewProps> = ({ units, setUnits, courses, a
 
     return (
         <>
-            <div className="bg-white rounded-xl shadow-sm">
-                {renderHeader()}
-                {view === 'month' && renderMonthView()}
-                {view === 'week' && renderWeekView()}
-                {view === 'day' && renderDayView()}
+            <div className="flex flex-col h-full min-h-0 bg-white rounded-xl shadow-sm overflow-hidden">
+                {/* Cabecera (mes + flechas + vistas) y franja de dias: FUERA del area de
+                    scroll, de modo que permanecen visibles al desplazarse por el mes. */}
+                <div className="shrink-0">
+                    {renderHeader()}
+                    {view === 'month' && renderMonthWeekdayStrip()}
+                    {view === 'week' && renderWeekDatesStrip()}
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                    {view === 'month' && renderMonthView()}
+                    {view === 'week' && renderWeekView()}
+                    {view === 'day' && renderDayView()}
+                </div>
             </div>
             <SessionActionModal
                 isOpen={isActionModalOpen}

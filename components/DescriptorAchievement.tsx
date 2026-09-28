@@ -32,8 +32,9 @@ const DescriptorAchievement: React.FC<DescriptorAchievementProps> = ({ classData
   }, [classData, courses]);
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-slate-800">Cobertura de Descriptores Operativos</h2>
+    <div className="flex flex-col h-full min-h-0">
+      <h2 className="text-xl font-bold text-slate-800 mb-4 shrink-0">Cobertura de Descriptores Operativos</h2>
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-6 pr-1">
       {keyCompetences.map(kc => {
         const descriptorsToShow = (kc.descriptors || []).filter(d => 
             !selectedStageSuffix || // show all if no course selected (fallback)
@@ -67,6 +68,7 @@ const DescriptorAchievement: React.FC<DescriptorAchievementProps> = ({ classData
             </div>
         );
       })}
+      </div>
     </div>
   );
 };

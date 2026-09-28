@@ -69,8 +69,8 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
     };
 
     return (
-        <div className="overflow-hidden">
-            <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col h-full min-h-0">
+            <div className="flex justify-between items-center mb-4 shrink-0">
                 <h2 className="text-xl font-bold text-slate-800">Grado de Consecución de Competencias Específicas</h2>
                  <div>
                     <select
@@ -83,7 +83,7 @@ const SpecificCompetenceAchievement: React.FC<SpecificCompetenceAchievementProps
                     </select>
                 </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="flex-1 min-h-0 overflow-auto">
                 <table className="min-w-full text-sm text-left text-slate-500">
                     <thead className="text-xs text-slate-700 uppercase bg-slate-100 sticky top-0 z-20">
                         <tr>

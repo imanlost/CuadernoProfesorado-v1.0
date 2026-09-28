@@ -532,9 +532,9 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
   }, [categoriesForPeriod, assignmentsForPeriod, activePeriodId]);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
-      {/* HEADER: Removed sticky here to allow scrolling if needed, minimizing overlap risk */}
-      <div className="border-b flex flex-col md:flex-row justify-between items-end md:items-center bg-white rounded-t-xl">
+    <div className="flex flex-col h-full min-h-0 bg-white rounded-xl shadow-sm overflow-hidden">
+      {/* HEADER: estatico, fuera del area de scroll de la tabla (queda siempre visible) */}
+      <div className="border-b flex flex-col md:flex-row justify-between items-end md:items-center bg-white rounded-t-xl shrink-0">
         {/* LEFT: Class Tabs */}
         <div className="flex overflow-x-auto no-scrollbar max-w-full md:max-w-[60%] px-2 pt-2">
             {sortedAcademicClasses.map(cls => (
@@ -582,7 +582,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
       
       {/* Spreadsheet Mode Toggle Bar */}
       {activePeriodId !== 'final' && (
-          <div className={`px-4 py-2 border-b flex justify-between items-center ${isSpreadsheetMode ? 'bg-green-50' : 'bg-slate-50'}`}>
+          <div className={`px-4 py-2 border-b flex justify-between items-center shrink-0 ${isSpreadsheetMode ? 'bg-green-50' : 'bg-slate-50'}`}>
               <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setIsSpreadsheetMode(!isSpreadsheetMode)}
@@ -640,7 +640,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
           </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="flex-1 min-h-0 overflow-auto">
         {academicConfiguration.calculationMode === 'competences' && (
             <div className="bg-indigo-100 border-l-4 border-indigo-500 text-indigo-700 p-3 mb-4 rounded shadow-sm text-sm flex items-center justify-between">
                 <div>

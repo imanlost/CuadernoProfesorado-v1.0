@@ -1,5 +1,14 @@
 # Changelog - Cuaderno del Profesor
 
+## [2026-09-28] - v2.16: Encabezados fijos al desplazar (calendario, calificaciones, informes y diario de clase)
+- **Mejorado**: Las **cabeceras de las pantallas quedan fijas al desplazar** el contenido (antes se desplazaba todo y se perdía de vista el contexto). Ahora, mientras se revisan las filas de abajo, se sigue viendo en todo momento la tarea o el criterio sobre el que se está trabajando:
+  - **Calendario**: quedan fijos el mes con sus flechas y el botón «Hoy», los botones de vista (Mes/Semana/Día) y la línea de días de la semana (Lun-Vie); en la vista Semana, la franja con las fechas de los cinco días.
+  - **Calificaciones**: quedan fijas las pestañas de clase y de evaluación y la fila de nombres de **Tareas** (la columna Alumn@ ya lo estaba). La tabla tiene ahora su propio desplazamiento vertical y horizontal.
+  - **Informes**: en las cuatro pestañas (Criterios, Competencias Específicas, Competencias Clave y Descriptores Operativos) queda fija la cabecera con el título, el selector de periodo y la fila de criterios, competencias o descriptores.
+  - **Diario de Clase**: queda fijo el bloque con el título, las flechas de navegación y la fecha.
+- **Mejorado**: el desplazamiento pasa del borde de la ventana al panel de contenido: la cabecera general («Cuaderno Docente») y el menú lateral ya no se mueven nunca.
+- **Interno**: solo cambios de maquetación (clases de Tailwind); sin ninguna modificación en los datos, en los cálculos ni en los archivos guardados.
+
 ## [2026-09-07] - v2.15: Colores por nivel en horario y calendario, exportación del horario (JSON/CSV) y borrado de planificación
 - **Añadido**: Las clases se colorean automáticamente **por nivel educativo** (azules 1º ESO, naranjas 2º ESO, verdes 3º ESO, violetas 4º ESO, amarillos 1º Bachillerato, rojos 2º Bachillerato) en el horario semanal, la vista Semana y el calendario de sesiones, con **tonalidades diferenciadas** entre grupos del mismo nivel (se alterna un tono claro y otro medio y se amplía la gama de matices).
 - **Añadido**: **Selector de color por clase** en Ajustes > Clases y Alumnado (botón «Automático» restaura el color de su nivel; la bola de color junto a la clase muestra el color activo).
