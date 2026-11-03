@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Modal from './Modal';
 import type { Student, Assignment, Grade, EvaluationCriterion, EvaluationTool, Rubric, Category } from '../types';
 import { calculateToolGlobalScore } from '../services/gradeCalculations';
@@ -66,6 +66,21 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
         }
     }
   }, [isOpen, grade, assignment, isRecoveryTaskWithAssignments, student.id]); // Added student.id dependency to reset when switching students
+
+  // Autofoco: primero «Calificación Única» (si la tarea tiene varios criterios); si no, el primer criterio.
+  // El cursor queda al final del contenido, sin seleccionar.
+  const singleGradeRef = useRef<HTMLInputElement>(null);
+  const firstCriterionRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    const t = window.setTimeout(() => {
+      const el = singleGradeRef.current || firstCriterionRef.current;
+      if (!el) return;
+      el.focus();
+      try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* input numérico */ }
+    }, 30);
+    return () => window.clearTimeout(t);
+  }, [isOpen, student.id, assignment.id]);
 
   const handleScoreChange = (criterionId: string, value: string) => {
     setSingleGrade('');
@@ -157,6 +172,7 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
                     {isPeriodRecovery ? 'Esta nota reemplazará la nota final de las evaluaciones seleccionadas solo si están suspensas y esta es superior.' : 'Esta nota se aplicará a todos los criterios de las tareas recuperadas.'}
                 </p>
                 <input
+                    ref={singleGradeRef}
                     type="number" step="0.01" min="0" max="10" value={singleGrade} onChange={handleSingleGradeChange}
                     className="w-full p-2 text-lg text-center font-semibold border rounded-md" placeholder="-"/>
             </div>
@@ -170,12 +186,13 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
                 <div className="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <label className="block text-sm font-medium text-slate-700">Calificación Única (opcional)</label>
                     <input
+                        ref={singleGradeRef}
                         type="number" step="0.01" min="0" max="10" value={singleGrade} onChange={handleSingleGradeChange}
                         className="w-full p-2 text-lg text-center font-semibold border rounded-md" placeholder="-"/>
                 </div>
             )}
             <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                {assignment.linkedCriteria.map(lc => {
+                {assignment.linkedCriteria.map((lc, idx) => {
                     const criterion = criteriaList.find(c => c.id === lc.criterionId);
                     if (!criterion) return null;
                     const percentage = totalRatio > 0 ? ((lc.ratio / totalRatio) * 100).toFixed(1) : '0.0';
@@ -187,6 +204,7 @@ const GradeEntryModal: React.FC<GradeEntryModalProps> = (props) => {
                                 <span className="text-slate-500 ml-2">{criterion.description}</span>
                             </label>
                             <input
+                                ref={idx === 0 ? firstCriterionRef : undefined}
                                 type="number" step="0.01" min="0" max="10" value={scores[criterion.id] ?? ''}
                                 onChange={(e) => handleScoreChange(criterion.id, e.target.value)}
                                 className="w-24 p-2 text-center border rounded-md" placeholder="-"/>

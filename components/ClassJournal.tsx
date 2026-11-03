@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { JournalEntry, ClassData, AcademicConfiguration, ProgrammingUnit, Course } from '../types';
 import { ClockIcon, BookOpenIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import { PALETTE_COLORS } from '../constants';
@@ -156,6 +156,18 @@ const ClassJournal: React.FC<ClassJournalProps> = ({ classes, entries, onSave, a
       setColorMap(newColors);
       setIsDirtyMap(newDirty);
   }, [selectedDate, scheduledClasses, entries]);
+
+  // Autofoco: al entrar en el diario (o cambiar de fecha) el cursor va a las anotaciones del primer bloque.
+  const firstNoteRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const el = firstNoteRef.current;
+      if (!el) return;
+      el.focus();
+      try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* nada */ }
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [selectedDate, scheduledClasses.length]);
 
   const handleNoteChange = (classId: string, text: string) => {
       setNotesMap(prev => ({ ...prev, [classId]: text }));
@@ -316,6 +328,7 @@ const ClassJournal: React.FC<ClassJournalProps> = ({ classes, entries, onSave, a
                                 <div className="space-y-2">
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Anotaciones:</label>
                                     <textarea
+                                        ref={index === 0 ? firstNoteRef : undefined}
                                         value={notesMap[classId] || ''}
                                         onChange={(e) => handleNoteChange(classId, e.target.value)}
                                         placeholder={`Anotaciones reales de la sesión (incidencias, tareas mandadas, etc.)...`}

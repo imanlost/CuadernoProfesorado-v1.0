@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Assignment, EvaluationCriterion, LinkedCriterion, Category, SpecificCompetence, KeyCompetence, ClassData, AcademicConfiguration, EvaluationPeriod, OperationalDescriptor } from '../types';
 import Modal from './Modal';
 import { TrashIcon } from './Icons';
@@ -42,6 +42,19 @@ const CalendarTaskModal: React.FC<CalendarTaskModalProps> = (props) => {
             }
         }
     }, [isOpen, selectedClassId, classes]);
+
+    // Autofoco: al abrir, el cursor va al nombre de la tarea (no a la lista de clases).
+    const nameTaskRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (!isOpen) return;
+        const t = window.setTimeout(() => {
+            const el = nameTaskRef.current;
+            if (!el) return;
+            el.focus();
+            el.setSelectionRange(el.value.length, el.value.length);
+        }, 30);
+        return () => window.clearTimeout(t);
+    }, [isOpen]);
 
     const evaluationPeriod = useMemo<EvaluationPeriod | null>(() => {
         const dateStr = toYYYYMMDD(selectedDate);
@@ -165,6 +178,7 @@ const CalendarTaskModal: React.FC<CalendarTaskModalProps> = (props) => {
                     <div className="lg:col-span-1">
                          <label htmlFor="name-task" className="block text-sm font-medium text-slate-700">Nombre de la Tarea</label>
                         <input
+                            ref={nameTaskRef}
                             type="text" id="name-task" value={name} onChange={e => setName(e.target.value)}
                             className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm"
                             required

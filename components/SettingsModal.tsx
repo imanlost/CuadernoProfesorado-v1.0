@@ -106,10 +106,8 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
                         <SettingsNavItem icon={<AcademicCapIcon />} label="Gestionar Currículo" view="curriculum" activeView={activeView} setActiveView={setActiveView} />
                         <SettingsNavItem icon={<ListBulletIcon />} label="Planificación UD" view="planner" activeView={activeView} setActiveView={setActiveView} />
                         <SettingsNavItem icon={<BeakerIcon />} label="Instrumentos Evaluación" view="evaluationTools" activeView={activeView} setActiveView={setActiveView} />
+                        <SettingsNavItem icon={<ArrowDownTrayIcon />} label="Copia de Seguridad" view="backup" activeView={activeView} setActiveView={setActiveView} tone="amber" className="mt-4 pt-4 border-t border-slate-200" />
                     </ul>
-                    <div className="mt-4 pt-4 border-t">
-                         <SettingsNavItem icon={<ArrowDownTrayIcon />} label="Copia de Seguridad" view="backup" activeView={activeView} setActiveView={setActiveView} />
-                    </div>
                 </nav>
                 <main className="flex-grow min-w-0 pr-2">
                     {renderView()}
@@ -119,12 +117,14 @@ const SettingsModal: React.FC<SettingsModalProps> = (props) => {
     );
 };
 
-const SettingsNavItem = ({ icon, label, view, activeView, setActiveView }: any) => (
-    <li>
+const SettingsNavItem = ({ icon, label, view, activeView, setActiveView, tone = 'blue', className = '' }: any) => (
+    <li className={className}>
         <button
             onClick={() => setActiveView(view)}
             className={`w-full flex items-center p-2 rounded-lg text-left text-sm font-medium transition-colors ${
-                activeView === view ? 'bg-blue-100 text-blue-700' : 'text-slate-600 hover:bg-slate-100'
+                activeView === view
+                    ? (tone === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700')
+                    : (tone === 'amber' ? 'text-amber-700 hover:bg-amber-50' : 'text-slate-600 hover:bg-slate-100')
             }`}
         >
             {React.cloneElement(icon, { className: 'w-5 h-5 mr-3' })}

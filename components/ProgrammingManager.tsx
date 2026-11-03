@@ -617,6 +617,20 @@ const UnitEditor: React.FC<{ unit: ProgrammingUnit; onSave: (unit: ProgrammingUn
         });
     };
 
+    // Reordenar sesiones arrastrando (además de con las flechas)
+    const handleSessionDragEnd = (result: DropResult) => {
+        if (!result.destination) return;
+        const from = result.source.index;
+        const to = result.destination.index;
+        if (from === to) return;
+        setEditedUnit(prev => {
+            const details = [...(prev.sessionDetails || [])];
+            const [movedItem] = details.splice(from, 1);
+            details.splice(to, 0, movedItem);
+            return { ...prev, sessionDetails: details };
+        });
+    };
+
     const handleMultiSelectChange = (field: 'linkedCriteriaIds' | 'linkedBasicKnowledgeIds', newIdSet: Set<string>) => {
         handleFieldChange(field, Array.from(newIdSet));
     };
@@ -658,8 +672,18 @@ const UnitEditor: React.FC<{ unit: ProgrammingUnit; onSave: (unit: ProgrammingUn
             <div>
                 <h4 className="text-sm font-semibold text-slate-700 mb-2">Detalle de las Sesiones</h4>
                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    <DragDropContext onDragEnd={handleSessionDragEnd}>
+                    <Droppable droppableId="sessions-list">
+                    {(provided) => (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                     {(editedUnit.sessionDetails || []).map((detail, index) => (
-                        <div key={index} className="flex items-center gap-3 p-2 border rounded-lg bg-white">
+                        // @ts-ignore
+                        <Draggable key={`session-${index}`} draggableId={`session-${index}`} index={index}>
+                        {(prov, snapshot) => (
+                        <div ref={prov.innerRef} {...prov.draggableProps} className={`flex items-center gap-3 p-2 border rounded-lg bg-white ${snapshot.isDragging ? 'shadow-lg border-blue-400 ring-2 ring-blue-100' : ''}`}>
+                            <div {...prov.dragHandleProps} className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 px-0.5" title="Arrastrar para reordenar la sesión">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><circle cx="7" cy="4" r="1.5"/><circle cx="13" cy="4" r="1.5"/><circle cx="7" cy="10" r="1.5"/><circle cx="13" cy="10" r="1.5"/><circle cx="7" cy="16" r="1.5"/><circle cx="13" cy="16" r="1.5"/></svg>
+                            </div>
                             <div className="flex flex-col">
                                 <button type="button" onClick={() => handleSessionReorder(index, 'up')} disabled={index === 0} className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30"><ArrowUpIcon className="w-4 h-4"/></button>
                                 <button type="button" onClick={() => handleSessionReorder(index, 'down')} disabled={index === (editedUnit.sessionDetails || []).length - 1} className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30"><ArrowDownIcon className="w-4 h-4"/></button>
@@ -689,7 +713,14 @@ const UnitEditor: React.FC<{ unit: ProgrammingUnit; onSave: (unit: ProgrammingUn
                             </div>
                             <input type="text" value={detail.description} onChange={e => handleSessionDetailChange(index, 'description', e.target.value)} placeholder="Contenido o actividad principal..." className="w-full p-2 border border-slate-300 rounded-lg text-sm"/>
                         </div>
+                        )}
+                        </Draggable>
                     ))}
+                    {provided.placeholder}
+                    </div>
+                    )}
+                    </Droppable>
+                    </DragDropContext>
                  </div>
             </div>
             

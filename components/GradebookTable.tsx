@@ -889,7 +889,7 @@ const GradebookTable: React.FC<GradebookTableProps> = (props) => {
                     })}
                     <td 
                         onClick={() => handleOpenBreakdown(student, activePeriodId)}
-                        className={`p-2 text-center font-bold text-base bg-slate-100 border-l cursor-pointer hover:ring-2 hover:ring-inset hover:ring-blue-400 transition-all ${studentPeriodGrades.get(student.id)?.get(activePeriodId)?.styleClasses}`}
+                        className={`p-2 text-center font-bold text-base border-l cursor-pointer hover:ring-2 hover:ring-inset hover:ring-blue-400 transition-all ${studentPeriodGrades.get(student.id)?.get(activePeriodId)?.styleClasses || 'bg-slate-100'}`}
                     >
                       {studentPeriodGrades.get(student.id)?.get(activePeriodId)?.grade?.toFixed(2) ?? '-'}
                     </td>

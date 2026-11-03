@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { Assignment, EvaluationCriterion, LinkedCriterion, Category, SpecificCompetence, KeyCompetence, OperationalDescriptor, ProgrammingUnit, AcademicConfiguration, EvaluationPeriod, EvaluationTool } from '../types';
 import Modal from './Modal';
 import { TrashIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon, LinkIcon } from './Icons';
@@ -148,6 +148,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = (props) => {
 
   const totalRatio = linkedCriteria.reduce((sum, lc) => sum + lc.ratio, 0);
 
+  // Autofoco: al abrir la ventana el cursor queda listo en el nombre, al final del texto
+  // (sin seleccionar, para no machacar lo que ya hubiera al editar).
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    const t = window.setTimeout(() => {
+      const el = nameInputRef.current;
+      if (!el) return;
+      el.focus();
+      try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* campos sin selección */ }
+    }, 30);
+    return () => window.clearTimeout(t);
+  }, [isOpen]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name) {
@@ -193,6 +207,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = (props) => {
           <div className="lg:col-span-1">
             <label htmlFor="name" className="block text-sm font-medium text-slate-700">Nombre de la Tarea</label>
             <input
+              ref={nameInputRef}
               type="text" id="name" value={name} onChange={(e) => setName(e.target.value)}
               className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm" required
             />

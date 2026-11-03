@@ -1,5 +1,18 @@
 # Changelog - Cuaderno del Profesor
 
+## [2026-11-03] - v2.18: el cursor también en el diario y en las sesiones del calendario
+- **Corregido**: al **Calificar**, el cursor no caía en «Calificación Única» sino en el primer criterio. Ahora cae donde debe.
+- **Añadido**: **autofoco en el Diario de Clase** (al entrar o cambiar de fecha, en las anotaciones del primer bloque) y **al abrir una sesión del calendario**.
+- **Interno**: sin cambios en datos ni en cálculos.
+
+## [2026-11-03] - v2.17: Color de la nota de evaluación, autofoco y pequeñas incomodidades de uso
+- **Corregido**: la columna **Nota Ev.** salía con **fondo gris** en casi todas las filas (solo se veían las notas «Bien», en amarillo). La celda llevaba un color de fondo fijo (`bg-slate-100`) junto al color del semáforo; al competir dos clases de fondo gana la que va después en la hoja de estilos. Ahora el gris queda solo como respaldo cuando no hay nota.
+- **Mejorado**: al abrir las ventanas de **Nueva/Editar Tarea**, **Calificar** y **Nueva Tarea del calendario**, el cursor ya está listo para escribir (en Calificar, directamente en «Calificación Única»), al final del texto existente para no machacar nada.
+- **Corregido**: la ventana **ya no se cierra** al seleccionar texto y soltar fuera del recuadro: solo cierra si el clic empezó en el fondo. Arreglado en el componente común de ventanas.
+- **Mejorado**: las **sesiones de una unidad didáctica se pueden reordenar arrastrando** desde el asa de puntos, además de con las flechas.
+- **Corregido**: la **viñeta suelta** y el descuadre de «Copia de Seguridad» en Ajustes (etiqueta de lista fuera de su lista). Ese acceso se muestra ahora en **ámbar**.
+- **Interno**: sin cambios en datos ni en cálculos.
+
 ## [2026-09-28] - v2.16: Encabezados fijos al desplazar (calendario, calificaciones, informes y diario de clase)
 - **Mejorado**: Las **cabeceras de las pantallas quedan fijas al desplazar** el contenido (antes se desplazaba todo y se perdía de vista el contexto). Ahora, mientras se revisan las filas de abajo, se sigue viendo en todo momento la tarea o el criterio sobre el que se está trabajando:
   - **Calendario**: quedan fijos el mes con sus flechas y el botón «Hoy», los botones de vista (Mes/Semana/Día) y la línea de días de la semana (Lun-Vie); en la vista Semana, la franja con las fechas de los cinco días.

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Modal from './Modal';
 import { CalendarEvent } from './CalendarView'; 
 import { BookOpenIcon } from './Icons';
@@ -26,6 +26,19 @@ const SessionActionModal: React.FC<SessionActionModalProps> = ({ isOpen, onClose
             setSelectedColor(event.color);
         }
     }, [event]);
+
+    // Autofoco: al abrir la sesión del calendario, el cursor va a las anotaciones del diario.
+    const journalNoteRef = useRef<HTMLTextAreaElement>(null);
+    useEffect(() => {
+        if (!isOpen) return;
+        const t = window.setTimeout(() => {
+            const el = journalNoteRef.current;
+            if (!el) return;
+            el.focus();
+            try { el.setSelectionRange(el.value.length, el.value.length); } catch { /* nada */ }
+        }, 30);
+        return () => window.clearTimeout(t);
+    }, [isOpen, event]);
 
     if (!event) return null;
 
@@ -107,6 +120,7 @@ const SessionActionModal: React.FC<SessionActionModalProps> = ({ isOpen, onClose
                     <div className="space-y-2">
                         <label htmlFor="journal-note-edit" className="block text-sm font-medium text-slate-700">Anotaciones del Diario (Lo Realizado)</label>
                         <textarea
+                            ref={journalNoteRef}
                             id="journal-note-edit"
                             value={journalNote}
                             onChange={(e) => setJournalNote(e.target.value)}

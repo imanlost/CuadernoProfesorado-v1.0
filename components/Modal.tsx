@@ -19,6 +19,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
   const resizeStartPos = useRef({ x: 0, y: 0 });
   const resizeStartSize = useRef({ width: 0, height: 0 });
   const modalRef = useRef<HTMLDivElement>(null);
+  // Cierra solo si el clic NACIÓ en el fondo: evita que al seleccionar texto y soltar
+  // fuera del recuadro (o al arrastrar la ventana) se cierre el modal.
+  const mouseDownOnOverlay = useRef(false);
 
   // Reset position and size when modal opens
   useEffect(() => {
@@ -92,7 +95,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 
   return (
     <div 
       className="fixed inset-0 bg-black/40 z-50 flex justify-center items-center overflow-hidden"
-      onClick={onClose}
+      onMouseDown={(e: React.MouseEvent) => { mouseDownOnOverlay.current = (e.target === e.currentTarget); }}
+      onClick={(e: React.MouseEvent) => { if (mouseDownOnOverlay.current && e.target === e.currentTarget) onClose(); }}
     >
       <div 
         ref={modalRef}
