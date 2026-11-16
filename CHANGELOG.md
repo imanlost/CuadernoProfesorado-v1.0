@@ -1,5 +1,12 @@
 # Changelog - Cuaderno del Profesor
 
+## [2026-11-16] - v2.19: boletines por alumno en PDF, informe de medidas y desglose de la nota final
+- **Añadido**: **Boletines por alumno/a en PDF** en Exportar Informes. Un PDF por clase y evaluación seleccionada, con **una hoja nueva por alumno/a** (se puede imprimir una hoja suelta o trocear el PDF): desglose de la nota de la evaluación (categorías, pesos, actividades y fórmula), criterios de evaluación, competencias específicas y competencias clave.
+- **Añadido**: **Informe de Medidas y Anotaciones** (CSV), un fichero por clase con las medidas ACNEAE de cada alumno/a, el número de anotaciones y su texto fechado, y una columna de avisos importantes. Incluye también al alumnado **sin medidas** («Sin medidas»), para usarlo como lista de control.
+- **Mejorado**: el desglose de la **Nota Final de Curso** muestra ahora una tabla con la nota de cada evaluación, su peso y lo que aporta a la media (marcando las recuperadas) y la fórmula aplicada con el resultado. Antes solo repetía los pesos.
+- **Mejorado**: al pasar el ratón por el punto ACNEAE, las etiquetas salen **ordenadas por prioridad** (PAC > PRE > ACS > ABS > RE… y REP siempre la última), sin el texto «(Prioritario: …)». El color del punto no cambia.
+- **Interno**: sin cambios en el modelo de datos ni en los cálculos. Dependencias nuevas: `jspdf` y `jspdf-autotable`, que solo se cargan al generar boletines (carga diferida).
+
 ## [2026-11-03] - v2.18: el cursor también en el diario y en las sesiones del calendario
 - **Corregido**: al **Calificar**, el cursor no caía en «Calificación Única» sino en el primer criterio. Ahora cae donde debe.
 - **Añadido**: **autofoco en el Diario de Clase** (al entrar o cambiar de fecha, en las anotaciones del primer bloque) y **al abrir una sesión del calendario**.

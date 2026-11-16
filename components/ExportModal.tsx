@@ -4,6 +4,7 @@ import Modal from './Modal';
 import JSZip from 'jszip/dist/jszip.min.js';
 import type { ClassData, Course, KeyCompetence, SpecificCompetence, EvaluationCriterion, AcademicConfiguration, ProgrammingUnit, BasicKnowledge } from '../types';
 import { calculateEvaluationPeriodGradeForStudent, calculateOverallFinalGradeForStudent, calculateStudentCriterionGrades, calculateStudentCompetenceGrades, calculateStudentKeyCompetenceGrades } from '../services/gradeCalculations';
+import { sortAcneaeTags } from '../constants';
 
 interface ExportModalProps {
     isOpen: boolean;
@@ -31,6 +32,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
     const [includeFinalGrades, setIncludeFinalGrades] = useState(true);
     const [includePlanning, setIncludePlanning] = useState(true);
     const [includeFinalCourseReport, setIncludeFinalCourseReport] = useState(true);
+    const [includeStudentBulletins, setIncludeStudentBulletins] = useState(false);
+    const [includeMeasuresReport, setIncludeMeasuresReport] = useState(false);
     const [selectedPeriodIds, setSelectedPeriodIds] = useState<Set<string>>(new Set(academicConfiguration.evaluationPeriods.map(p => p.id)));
 
     const handleSelectAll = (checked: boolean) => {
@@ -69,10 +72,15 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
         }
 
         const periodsToExport = academicConfiguration.evaluationPeriods.filter(p => selectedPeriodIds.has(p.id));
-        const hasWorkSelected = includeFinalGrades || includePlanning || includeFinalCourseReport || periodsToExport.length > 0;
+        const hasWorkSelected = includeFinalGrades || includePlanning || includeFinalCourseReport || includeStudentBulletins || includeMeasuresReport || periodsToExport.length > 0;
 
         if (!hasWorkSelected) {
             alert("Por favor, selecciona al menos un tipo de informe para exportar.");
+            return;
+        }
+
+        if (includeStudentBulletins && periodsToExport.length === 0) {
+            alert("Para generar los boletines en PDF selecciona al menos una evaluación (los boletines se emiten por evaluación).");
             return;
         }
 
@@ -82,6 +90,10 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
         const bom = "\uFEFF";
 
         for (const classData of classesToExport) {
+            // Ceder el hilo entre clases: con boletines PDF el proceso es pesado y así
+            // la interfaz repinta el aviso de «Generando…» en vez de quedarse congelada.
+            await new Promise(resolve => setTimeout(resolve, 0));
+
             const course = courses.find(c => c.id === classData.courseId);
             if (!course) continue;
 
@@ -178,6 +190,63 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
                     classFolder.file(`Planificacion_${classNameSanitized}.csv`, bom + planningCsvContent);
                 }
             }
+
+            // 6. Informe de medidas y anotaciones (una fila por alumno, también los que no tienen medidas)
+            if (includeMeasuresReport) {
+                const measureHeaders = ['Alumn@', 'Medidas ACNEAE', 'Nº anotaciones', 'Anotaciones', 'Avisos importantes'];
+                const fmtNoteDate = (iso: string): string => {
+                    if (!iso) return '';
+                    const [y, m, d] = iso.split('-');
+                    if (!y || !m || !d) return iso;
+                    return `${d}/${m}/${y}`;
+                };
+                const measureRows = [...classData.students]
+                    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+                    .map(student => {
+                        const notes = [...(student.notes || [])].sort((a, b) => {
+                            if (a.important !== b.important) return a.important ? -1 : 1;
+                            return b.date.localeCompare(a.date);
+                        });
+                        const medidas = sortAcneaeTags(student.acneae || []);
+                        const notasTxt = notes
+                            .map(n => `${fmtNoteDate(n.date)} — ${n.text.replace(/\s+/g, ' ').trim()}`)
+                            .join(' | ');
+                        const importantes = notes
+                            .filter(n => n.important)
+                            .map(n => `${fmtNoteDate(n.date)} — ${n.text.replace(/\s+/g, ' ').trim()}`)
+                            .join(' | ');
+                        return [
+                            student.name,
+                            medidas.length > 0 ? medidas.join(' > ') : 'Sin medidas',
+                            String(notes.length),
+                            notasTxt,
+                            importantes,
+                        ];
+                    });
+                const measuresCsvContent = [measureHeaders, ...measureRows].map(row => row.map(escapeCsvCell).join(',')).join('\n');
+                classFolder.file(`${classNameSanitized}_Informe_Medidas.csv`, bom + measuresCsvContent);
+            }
+
+            // 7. Boletines por alumno en PDF (uno por clase y evaluación, una hoja nueva por alumno)
+            if (includeStudentBulletins) {
+                // Carga diferida: jsPDF (~350 KB) solo se descarga si se piden boletines.
+                const { buildClassBulletinsPdf } = await import('../services/studentBulletinsPdf');
+                for (const period of periodsToExport) {
+                    const pdfDoc = buildClassBulletinsPdf(classData, period.id, {
+                        classes,
+                        courses,
+                        keyCompetences,
+                        specificCompetences,
+                        evaluationCriteria,
+                        academicConfiguration,
+                    });
+                    const pdfBlob = pdfDoc.output('blob');
+                    classFolder.file(
+                        `${classNameSanitized}_Boletines_${period.name.replace(/ /g, '_')}.pdf`,
+                        pdfBlob,
+                    );
+                }
+            }
         }
         
         try {
@@ -257,6 +326,19 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
                             </div>
                         </label>
 
+                        <label className="flex items-center space-x-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                checked={includeMeasuresReport}
+                                onChange={(e) => setIncludeMeasuresReport(e.target.checked)}
+                                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                            />
+                            <div>
+                                <span className="block font-medium text-slate-700 group-hover:text-blue-600 transition-colors">Informe de Medidas y Anotaciones</span>
+                                <span className="text-xs text-slate-500">Un CSV por clase con las medidas ACNEAE y las anotaciones de cada alumno/a, incluidos los que no tienen medidas.</span>
+                            </div>
+                        </label>
+
                         <div className="pt-2 border-t border-slate-200">
                             <span className="block text-sm font-semibold text-slate-700 mb-2">Informes de Evaluación por Periodo:</span>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -284,6 +366,28 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, classes, cou
                             <p className="mt-2 text-[10px] text-slate-400 italic">
                                 * Cada periodo seleccionado generará informes detallados de criterios y competencias.
                             </p>
+
+                            <label className="mt-3 flex items-start gap-3 p-3 rounded-lg border border-slate-200 bg-white cursor-pointer group">
+                                <input
+                                    type="checkbox"
+                                    checked={includeStudentBulletins}
+                                    onChange={(e) => setIncludeStudentBulletins(e.target.checked)}
+                                    className="w-4 h-4 mt-0.5 rounded text-blue-600 focus:ring-blue-500"
+                                />
+                                <div>
+                                    <span className="block font-medium text-slate-700 group-hover:text-blue-600 transition-colors">Boletines por alumno/a en PDF</span>
+                                    <span className="text-xs text-slate-500">
+                                        Un PDF por clase y evaluación seleccionada, con una hoja nueva por alumno/a: desglose de la nota
+                                        (categorías, actividades y fórmula), criterios de evaluación, competencias específicas y competencias clave.
+                                        Listo para imprimir hojas sueltas o enviar por correo.
+                                    </span>
+                                    {includeStudentBulletins && selectedPeriodIds.size === 0 && (
+                                        <span className="block mt-1 text-xs text-amber-600 font-medium">
+                                            Selecciona al menos una evaluación para generar los boletines.
+                                        </span>
+                                    )}
+                                </div>
+                            </label>
                         </div>
                     </div>
                 </div>

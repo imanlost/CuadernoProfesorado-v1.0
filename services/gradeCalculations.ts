@@ -649,3 +649,74 @@ export const calculateStudentKeyCompetenceGrades = (
     }
     return keyCompetenceGrades;
 };
+
+export interface FinalGradePeriodBreakdown {
+    id: string;
+    name: string;
+    weight: number | null;
+    grade: number | null;       // nota bruta de la evaluación
+    effectiveGrade: number | null; // nota tras aplicar la recuperación de periodo (si la hay)
+    recovered: boolean;
+}
+
+export interface FinalGradeBreakdown {
+    periods: FinalGradePeriodBreakdown[];
+    finalGrade: number | null;
+    totalWeight: number;
+}
+
+/**
+ * Desglose de la nota final de curso: nota de cada evaluación, peso aplicado,
+ * recuperación de periodo (si procede) y media ponderada resultante.
+ * Refleja exactamente el mismo cálculo que calculateOverallFinalGradeForStudent.
+ */
+export const calculateDetailedFinalGradeBreakdown = (
+    studentId: string,
+    classData: ClassData,
+    academicConfiguration: AcademicConfiguration,
+    criteria?: EvaluationCriterion[],
+    competences?: SpecificCompetence[],
+): FinalGradeBreakdown => {
+    const { evaluationPeriods, evaluationPeriodWeights = {}, gradeScale, passingGrade = 5 } = academicConfiguration;
+    const periodRecoveryMap = calculatePeriodRecoveryMap(studentId, classData);
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    const periods: FinalGradePeriodBreakdown[] = evaluationPeriods.map(period => {
+        const raw = calculateEvaluationPeriodGradeForStudent(
+            studentId, classData, period.id, gradeScale, passingGrade, academicConfiguration, criteria, competences
+        ).grade;
+
+        let effective = raw;
+        let recovered = false;
+        if (periodRecoveryMap.has(period.id)) {
+            const recoveryGrade = periodRecoveryMap.get(period.id)!;
+            if (effective !== null) {
+                if (effective < passingGrade && recoveryGrade > effective) {
+                    effective = recoveryGrade;
+                    recovered = true;
+                }
+            } else {
+                effective = recoveryGrade;
+                recovered = true;
+            }
+        }
+
+        const rawWeight = evaluationPeriodWeights[period.id];
+        const weight = (rawWeight === undefined || rawWeight === null) ? null : rawWeight;
+
+        if (effective !== null && weight !== null) {
+            weightedSum += effective * weight;
+            totalWeight += weight;
+        }
+
+        return { id: period.id, name: period.name, weight, grade: raw, effectiveGrade: effective, recovered };
+    });
+
+    return {
+        periods,
+        finalGrade: totalWeight > 0 ? weightedSum / totalWeight : null,
+        totalWeight,
+    };
+};

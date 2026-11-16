@@ -6,6 +6,32 @@ export const ACNEAE_TAGS = ['RE ACA', 'RE EC', 'RE', 'REP', 'PRE ES1', 'PRE ES2'
 export const ACNEAE_ORDER = { 'PAC': 1, 'PRE': 1, 'ABS': 1, 'RE ACA': 2, 'RE EC': 2, 'RE': 3, 'REP': 100, 'ACS': 1 };
 // REP (repetidor/a) = 100: queda SIEMPRE el último (las etiquetas sin orden asignado caen a 99)
 
+// Orden de PRESENTACIÓN de las etiquetas en los textos (tooltip, informes).
+// Es independiente de ACNEAE_ORDER, que decide el color del punto y no se toca.
+export const ACNEAE_TEXT_ORDER = ['PAC', 'PRE', 'ACS', 'ABS', 'RE ACA', 'RE EC', 'RE', 'FPEX', 'NN', 'REP'];
+
+/** Devuelve la etiqueta "base" de un tag ACNEAE: 'RE ACA' -> 'RE ACA', 'PAC EP1' -> 'PAC'. */
+const acneaeBase = (tag: string): string => {
+    const two = tag.split(' ').slice(0, 2).join(' ');
+    if (ACNEAE_TEXT_ORDER.includes(two)) return two;
+    return tag.split(' ')[0];
+};
+
+/** Ordena etiquetas ACNEAE para mostrarlas: PAC > PRE > ACS > ... > REP (siempre la última). */
+export const sortAcneaeTags = (tags: string[]): string[] => {
+    const rank = (tag: string): number => {
+        const base = acneaeBase(tag);
+        if (base === 'REP') return 1000;
+        const idx = ACNEAE_TEXT_ORDER.indexOf(base);
+        return idx === -1 ? 500 : idx;
+    };
+    return [...(tags || [])].sort((a, b) => {
+        const diff = rank(a) - rank(b);
+        return diff !== 0 ? diff : a.localeCompare(b, 'es');
+    });
+};
+
+
 // DESCRIPTORES OPERATIVOS LOMLOE - ETAPA ESO
 // This section is intentionally left empty. Curriculum should be imported by the user.
 const ESO_OPERATIONAL_DESCRIPTORS: Record<string, OperationalDescriptor> = {};

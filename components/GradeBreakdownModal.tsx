@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { Student, ClassData, AcademicConfiguration, EvaluationPeriod } from '../types';
-import { calculateDetailedPeriodGradeBreakdown, getGradeColorClass, calculateOverallFinalGradeForStudent } from '../services/gradeCalculations';
+import { calculateDetailedPeriodGradeBreakdown, getGradeColorClass, calculateDetailedFinalGradeBreakdown } from '../services/gradeCalculations';
 import Modal from './Modal';
 import { CalculatorIcon, InformationCircleIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
@@ -20,6 +20,11 @@ const GradeBreakdownModal: React.FC<GradeBreakdownModalProps> = ({ isOpen, onClo
         if (period.id === 'final') return null;
         return calculateDetailedPeriodGradeBreakdown(student.id, classData, period.id);
     }, [student.id, classData, period.id]);
+
+    const finalBreakdown = React.useMemo(() => {
+        if (period.id !== 'final') return null;
+        return calculateDetailedFinalGradeBreakdown(student.id, classData, academicConfiguration);
+    }, [student.id, classData, period.id, academicConfiguration]);
 
     const currentIndex = classData.students.findIndex(s => s.id === student.id);
     const hasPrevStudent = currentIndex > 0;
@@ -47,12 +52,7 @@ const GradeBreakdownModal: React.FC<GradeBreakdownModalProps> = ({ isOpen, onClo
 
     if (!breakdown && period.id !== 'final') return null;
 
-    const finalCourseGrade = React.useMemo(() => {
-        if (period.id !== 'final') return null;
-        // Import and calculate overall final grade
-        const result = calculateOverallFinalGradeForStudent(student.id, classData, academicConfiguration);
-        return result.grade !== 'N/A' ? parseFloat(result.grade) : null;
-    }, [student.id, classData, period.id, academicConfiguration]);
+    const finalCourseGrade = finalBreakdown ? finalBreakdown.finalGrade : null;
 
     const displayedGrade = period.id === 'final' ? finalCourseGrade : breakdown?.finalGrade;
 
@@ -170,26 +170,68 @@ const GradeBreakdownModal: React.FC<GradeBreakdownModalProps> = ({ isOpen, onClo
                     </div>
                 )}
 
-                {period.id === 'final' && (
+                {period.id === 'final' && finalBreakdown && (
                     <div className="p-4 bg-amber-50 rounded-lg border border-amber-100">
                          <h5 className="text-sm font-bold text-amber-800 mb-2 flex items-center gap-1">
                             <InformationCircleIcon className="w-4 h-4" />
                             Cálculo de Nota Final del Curso
                         </h5>
                         <p className="text-xs text-amber-700 leading-relaxed">
-                            La nota final se calcula promediando las notas de cada evaluación según los pesos configurados en Ajustes.
+                            Media ponderada de las evaluaciones con nota, según los pesos configurados en Ajustes. Las evaluaciones sin calificar no computan.
                         </p>
-                        <div className="mt-3 space-y-2">
-                            {academicConfiguration.evaluationPeriods.map(p => {
-                                const weight = academicConfiguration.evaluationPeriodWeights?.[p.id] ?? 0;
-                                return (
-                                    <div key={p.id} className="flex justify-between text-xs">
-                                        <span className="text-amber-600">{p.name} ({weight}%)</span>
-                                        <span className="font-bold text-amber-800">Peso: {weight}%</span>
-                                    </div>
-                                );
-                            })}
+                        <div className="mt-3 overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead>
+                                    <tr className="text-amber-700 border-b border-amber-200">
+                                        <th className="text-left py-1 font-semibold">Evaluación</th>
+                                        <th className="text-center py-1 font-semibold">Nota</th>
+                                        <th className="text-center py-1 font-semibold">Peso</th>
+                                        <th className="text-right py-1 font-semibold">Aporta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {finalBreakdown.periods.map(p => {
+                                        const computa = p.effectiveGrade !== null && p.weight !== null;
+                                        return (
+                                            <tr key={p.id} className="border-b border-amber-100 last:border-0">
+                                                <td className="py-1 text-amber-800">
+                                                    {p.name}
+                                                    {p.recovered && (
+                                                        <span className="ml-1 text-[10px] font-bold bg-amber-200 text-amber-900 px-1 rounded">RECUP.</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-1 text-center font-mono text-amber-900">
+                                                    {p.effectiveGrade !== null ? p.effectiveGrade.toFixed(2) : '—'}
+                                                </td>
+                                                <td className="py-1 text-center text-amber-700">
+                                                    {p.weight !== null ? `${p.weight}%` : '—'}
+                                                </td>
+                                                <td className="py-1 text-right font-mono font-bold text-amber-900">
+                                                    {computa ? ((p.effectiveGrade as number) * (p.weight as number)).toFixed(2) : '—'}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
+                        {finalBreakdown.finalGrade !== null ? (
+                            <p className="mt-3 text-xs font-mono text-amber-800 bg-amber-100/70 rounded p-2 leading-relaxed break-words">
+                                {'Nota = ['}
+                                {finalBreakdown.periods
+                                    .filter(p => p.effectiveGrade !== null && p.weight !== null)
+                                    .map(p => `(${(p.effectiveGrade as number).toFixed(2)} × ${p.weight})`)
+                                    .join(' + ')}
+                                {`] / ${finalBreakdown.totalWeight} = ${finalBreakdown.finalGrade.toFixed(2)}`}
+                            </p>
+                        ) : (
+                            <p className="mt-3 text-xs italic text-amber-700">
+                                No hay evaluaciones con nota y peso configurados.
+                            </p>
+                        )}
+                        <p className="mt-2 text-[10px] text-amber-600 italic">
+                            «Aporta» es la nota de la evaluación multiplicada por su peso. La suma de las aportaciones se divide entre la suma de los pesos aplicados.
+                        </p>
                     </div>
                 )}
 

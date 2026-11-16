@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ACNEAE_ORDER } from '../constants';
+import { ACNEAE_ORDER, sortAcneaeTags } from '../constants';
 
 interface AcneaeTagProps {
   tags: string[];
@@ -57,7 +57,7 @@ const AcneaeTag: React.FC<AcneaeTagProps> = ({ tags }) => {
   return (
     <div 
         className={`w-4 h-4 rounded-full flex-shrink-0 ${style.bg}`}
-        title={`ACNEAE: ${tags.join(', ')} (Prioritario: ${priorityTag})`}
+        title={`ACNEAE: ${sortAcneaeTags(tags).join(' > ')}`}
     >
     </div>
   );
